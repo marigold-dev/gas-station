@@ -6,6 +6,7 @@ import pytezos
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 
+# FIXME
 TEZOS_RPC = "http://localhost:20000"
 app = FastAPI()
 
@@ -17,8 +18,8 @@ ptz = pytezos.pytezos.using(TEZOS_RPC, admin_key)
 
 # FIXME
 allowed_entrypoints = {
-    "KT1NYUCNsd5NybHVr3UVYZE4WQmWQn4VJddi": ["stake", "unstake"],
-    "KT18mCT5nhvSfidacdU9rAL9KqEvDWQaqJys": ["mint_token", "permit"]
+    "KT1GPCSN88jU1EnmNvnnngnneowwAMrefbMx": ["stake", "unstake"],
+    "KT1BbUsGvsCdDgRoidDGrY7wyWu7uutBrphA": ["mint_token", "permit"]
 }
 
 
