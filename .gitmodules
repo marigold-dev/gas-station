@@ -1,0 +1,3 @@
+[submodule "permit-cameligo"]
+	path = permit-cameligo
+	url = https://github.com/aguillon/permit-cameligo
