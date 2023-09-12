@@ -18,29 +18,102 @@ def deploy_permit(admin):
     fa2_initial_storage["metadata"] = {
         "": tezos_hex("tezos-storage:m"),
         "m": json.dumps({
-            "name": "Dummy token",
+            "name": "Weapons",
             "interfaces": ["TZIP-12"]
         }).encode("utf-8")
     }
 
     fa2_initial_storage["token_metadata"] = {
-        0: {"token_id": 0,
+        0: {
+            "token_id": 0,
             "token_info": {
-                "name": tezos_hex("Dummy token 1"),
-                "symbol": tezos_hex("DUMY"),
+                "name": tezos_hex("Rusty sword"),
+                "description": tezos_hex("a rusty sword"),
+                "interfaces": tezos_hex(json.dumps(["TZIP-12"])),
+                "symbol": tezos_hex("TCK1"),
                 "decimals": tezos_hex("0"),
-                }
+                "thumbnailUri": tezos_hex("ipfs://QmdPmCiyNRUJiWAzRcd2UMUAnpFDhZVxujvPHg1xCx1GZb"),
+                "displayUri": tezos_hex("ipfs://QmdPmCiyNRUJiWAzRcd2UMUAnpFDhZVxujvPHg1xCx1GZb"),
+                "artifactUri": tezos_hex("ipfs://QmdPmCiyNRUJiWAzRcd2UMUAnpFDhZVxujvPHg1xCx1GZb")
+            }
+        },
+        1: {
+            "token_id": 1,
+            "token_info": {
+                "name": tezos_hex("Pirate sword"),
+                "description": tezos_hex("a pirate sword"),
+                "interfaces": tezos_hex(json.dumps(["TZIP-12"])),
+                "symbol": tezos_hex("TCK1"),
+                "decimals": tezos_hex("0"),
+                "thumbnailUri": tezos_hex("ipfs://QmPdwAqgBhM65fzzYT4FQmCELAej8Mei6QQZiBZ93M4Acq"),
+                "displayUri": tezos_hex("ipfs://QmPdwAqgBhM65fzzYT4FQmCELAej8Mei6QQZiBZ93M4Acq"),
+                "artifactUri": tezos_hex("ipfs://QmPdwAqgBhM65fzzYT4FQmCELAej8Mei6QQZiBZ93M4Acq")
+            }
+        },
+        2: {
+            "token_id": 2,
+            "token_info": {
+                "name": tezos_hex("Small knife"),
+                "description": tezos_hex("a small knife"),
+                "interfaces": tezos_hex(json.dumps(["TZIP-12"])),
+                "symbol": tezos_hex("TCK1"),
+                "decimals": tezos_hex("0"),
+                "thumbnailUri": tezos_hex("ipfs://QmV9RAPyo4xnPQG3qJLjHMmxJBjLWyyPKLiNdkzcmNB31c"),
+                "displayUri": tezos_hex("ipfs://QmV9RAPyo4xnPQG3qJLjHMmxJBjLWyyPKLiNdkzcmNB31c"),
+                "artifactUri": tezos_hex("ipfs://QmV9RAPyo4xnPQG3qJLjHMmxJBjLWyyPKLiNdkzcmNB31c")
+            }
+        },
+        3: {
+            "token_id": 3,
+            "token_info": {
+                "name": tezos_hex("Frying pan"),
+                "description": tezos_hex("a frying pan"),
+                "interfaces": tezos_hex(json.dumps(["TZIP-12"])),
+                "symbol": tezos_hex("TCK1"),
+                "decimals": tezos_hex("0"),
+                "thumbnailUri": tezos_hex("ipfs://QmWFiyrm9byfefPFAhsUdAQg6Q42CMj1ux8Jwo4fECRjNw"),
+                "displayUri": tezos_hex("ipfs://QmWFiyrm9byfefPFAhsUdAQg6Q42CMj1ux8Jwo4fECRjNw"),
+                "artifactUri": tezos_hex("ipfs://QmWFiyrm9byfefPFAhsUdAQg6Q42CMj1ux8Jwo4fECRjNw")
+            }
+        },
+        4: {
+            "token_id": 4,
+            "token_info": {
+                "name": tezos_hex("Slingshot"),
+                "description": tezos_hex("a slingshot"),
+                "interfaces": tezos_hex(json.dumps(["TZIP-12"])),
+                "symbol": tezos_hex("TCK1"),
+                "decimals": tezos_hex("0"),
+                "thumbnailUri": tezos_hex("ipfs://QmQZuirmonLR7uPFCfidX6vELLP6CLmD657qUdQUij8RhG"),
+                "displayUri": tezos_hex("ipfs://QmQZuirmonLR7uPFCfidX6vELLP6CLmD657qUdQUij8RhG"),
+                "artifactUri": tezos_hex("ipfs://QmQZuirmonLR7uPFCfidX6vELLP6CLmD657qUdQUij8RhG")
+            }
+        },
+        5: {
+            "token_id": 5,
+            "token_info": {
+                "name": tezos_hex("Claymore"),
+                "description": tezos_hex("a claymore"),
+                "interfaces": tezos_hex(json.dumps(["TZIP-12"])),
+                "symbol": tezos_hex("TCK1"),
+                "decimals": tezos_hex("0"),
+                "thumbnailUri": tezos_hex("ipfs://QmQYwBm31CJzAyGfYajLMULQHZUUYSrfAzJZgjZ7XurZZe"),
+                "displayUri": tezos_hex("ipfs://QmQYwBm31CJzAyGfYajLMULQHZUUYSrfAzJZgjZ7XurZZe"),
+                "artifactUri": tezos_hex("ipfs://QmQYwBm31CJzAyGfYajLMULQHZUUYSrfAzJZgjZ7XurZZe")
+            }
         }
     }
 
     fa2_initial_storage["extension"]["extension"] = {
-        0: 0  # 0 token initially
+        i: 0 for i in range(len(fa2_initial_storage["token_metadata"]))
     }
 
     fa2_initial_storage["extension"]["admin"] = admin.key.public_key_hash()
     fa2_initial_storage["extension"]["max_expiry"] = 3600
     fa2_initial_storage["extension"]["default_expiry"] = 3600
-    orig = admin.origination(fa2_contract.script(initial_storage=fa2_initial_storage)).autofill().sign().inject(min_confirmations=1)
+    orig = admin.origination(fa2_contract.script(
+        initial_storage=fa2_initial_storage)
+    ).autofill().sign().inject(min_confirmations=1)
     nft_contract_address = orig["contents"][0]["metadata"]["operation_result"]["originated_contracts"][0]
     nft_contract = admin.contract(nft_contract_address)
     return nft_contract
