@@ -143,8 +143,7 @@ class Demo:
             self.api_url,
             json={
                 "sender": sender,
-                "contract_address": self.nft_contract.address,
-                "parameters": op.parameters
+                "operations": op.contents
             }
         )
         return req
@@ -172,7 +171,7 @@ class Demo:
             "owner": owner,
             "token_id": 0,
             "amount_": 100
-        }])
+        }]).as_transaction()
 
     def mint_requests(self, owners):
         mint_ops = [(self.generate_mint(owner), owner) for owner in owners]
@@ -184,13 +183,12 @@ class Demo:
         return self.make_requests(self.post_op, permits)
 
     def stake_request(self, sender, qty=10):
-        staking_op = self.staking_contract.stake(qty, sender)
+        staking_op = self.staking_contract.stake(qty, sender).as_transaction()
         req = requests.post(
             self.api_url,
             json={
                 "sender": sender,
-                "contract_address": self.staking_contract.address,
-                "parameters": staking_op.parameters
+                "operations": staking_op.contents
             }
         )
         return req
@@ -250,5 +248,5 @@ class Demo:
                 key.public_key(),
                 permit_signature,
                 transfer_hash
-            )])
+            )]).as_transaction()
         return permit_op

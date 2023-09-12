@@ -92,31 +92,44 @@ tezos_manager = TezosManager(ptz)
 # TODO: right now the sender isn't checked, as we use permits anyway
 class CallData(BaseModel):
     sender: str
-    contract_address: str
-    parameters: dict[str, Any]
+    operations: list[dict[str, Any]]
 
 
 @app.post("/operation")
 async def post_operation(call_data: CallData):
-    contract_address = call_data.contract_address
-    if contract_address not in allowed_entrypoints:
+    if len(call_data.operations) == 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Target {call_data.contract_address} is not allowed"
+            detail=f"Empty operations list"
         )
 
-    entrypoint = call_data.parameters["entrypoint"]
-    if entrypoint not in allowed_entrypoints[contract_address]:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Entrypoint {entrypoint} is not allowed"
+    # TODO: check that amount=0?
+    for operation in call_data.operations:
+        contract_address = operation["destination"]
+
+        # Transfers to implicit accounts are always accepted
+        if contract_address.startswith("KT"):
+            if contract_address not in allowed_entrypoints:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Target {contract_address} is not allowed"
+                )
+
+            entrypoint = operation["parameters"]["entrypoint"]
+            if entrypoint not in allowed_entrypoints[contract_address]:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Entrypoint {entrypoint} is not allowed"
+                )
+    op = ptz.bulk(*[
+        ptz.transaction(
+            source=ptz.key.public_key_hash(),
+            parameters=operation["parameters"],
+            destination=operation["destination"],
+            amount=0
         )
-    op = ptz.transaction(
-        source=ptz.key.public_key_hash(),
-        parameters=call_data.parameters,
-        destination=call_data.contract_address,
-        amount=0
-    )
+        for operation in call_data.operations
+    ])
     # TODO: log the result
     try:
         # Simulate the operation alone without sending it
