@@ -4,10 +4,11 @@ import asyncio
 
 import pytezos
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # FIXME
-TEZOS_RPC = "http://localhost:20000"
+TEZOS_RPC = "https://ghostnet.smartpy.io"
 app = FastAPI()
 
 # FIXME
@@ -21,6 +22,18 @@ allowed_entrypoints = {
     "KT1GPCSN88jU1EnmNvnnngnneowwAMrefbMx": ["stake", "unstake"],
     "KT1BbUsGvsCdDgRoidDGrY7wyWu7uutBrphA": ["mint_token", "permit"]
 }
+
+origins = [
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 
 class TezosManager:
