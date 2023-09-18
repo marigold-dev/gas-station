@@ -1,19 +1,33 @@
 from typing import Any
 from collections import OrderedDict
 import asyncio
+import os
+import subprocess
+from dotenv import load_dotenv
 
 import pytezos
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-# FIXME
-TEZOS_RPC = "https://ghostnet.smartpy.io"
+load_dotenv()
+TEZOS_RPC = os.getenv('TEZOS_RPC')
+SECRET_KEY_CMD = os.getenv('SECRET_KEY_CMD')
+if SECRET_KEY_CMD is not None:
+    command = SECRET_KEY_CMD.split()
+    sub = subprocess.run(command, stdout=subprocess.PIPE)
+    SECRET_KEY = sub.stdout.decode('utf-8').strip()
+else:
+    SECRET_KEY = os.getenv('SECRET_KEY')
+
+assert TEZOS_RPC is not None, "Please specify a TEZOS_RPC"
+assert SECRET_KEY is not None and len(SECRET_KEY) > 0, \
+    "Could not read secret key"
+
 app = FastAPI()
 
-# FIXME
 admin_key = pytezos.Key.from_encoded_key(
-    "edsk3QoqBuvdamxouPhin7swCvkQNgq4jP5KZPbwWNnwdZpSpJiEbq"
+    SECRET_KEY
 )
 ptz = pytezos.pytezos.using(TEZOS_RPC, admin_key)
 
@@ -157,5 +171,3 @@ try:
     asyncio.ensure_future(tezos_manager.main_loop())
 except KeyboardInterrupt:
     pass
-finally:
-    print("Closing Loop")

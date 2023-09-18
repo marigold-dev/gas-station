@@ -3,3 +3,4 @@ python-multipart
 uvicorn[standard]
 fastapi
 python-jose[cryptography]
+python-dotenv
