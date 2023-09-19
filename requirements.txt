@@ -4,3 +4,4 @@ uvicorn[standard]
 fastapi
 python-jose[cryptography]
 python-dotenv
+psycopg2
