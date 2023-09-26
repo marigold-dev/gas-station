@@ -10,6 +10,8 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from . import database as db
+
 load_dotenv()
 TEZOS_RPC = os.getenv('TEZOS_RPC')
 SECRET_KEY_CMD = os.getenv('SECRET_KEY_CMD')
@@ -30,12 +32,6 @@ admin_key = pytezos.Key.from_encoded_key(
     SECRET_KEY
 )
 ptz = pytezos.pytezos.using(TEZOS_RPC, admin_key)
-
-# FIXME
-allowed_entrypoints = {
-    "KT1GPCSN88jU1EnmNvnnngnneowwAMrefbMx": ["stake", "unstake"],
-    "KT1BbUsGvsCdDgRoidDGrY7wyWu7uutBrphA": ["mint_token", "permit"]
-}
 
 origins = [
     "http://localhost:5173"
@@ -60,7 +56,6 @@ class TezosManager:
 
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
-    # TODO: accept and queue several operations for a given sender
     async def queue_operation(self, sender, operation):
         self.results[sender] = "waiting"
         self.ops_queue[sender] = operation
@@ -122,15 +117,22 @@ async def post_operation(call_data: CallData):
         contract_address = operation["destination"]
 
         # Transfers to implicit accounts are always accepted
+        # FIXME we might want to change that
         if contract_address.startswith("KT"):
-            if contract_address not in allowed_entrypoints:
+            contracts = db.find_contract(contract_address)
+            if len(contracts) == 0:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=f"Target {contract_address} is not allowed"
                 )
 
+            contract_id = contracts[0][0]  # First row
             entrypoint = operation["parameters"]["entrypoint"]
-            if entrypoint not in allowed_entrypoints[contract_address]:
+            entrypoints = db.find_entrypoint(
+                contract_id,
+                entrypoint
+            )
+            if len(entrypoints) == 0:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=f"Entrypoint {entrypoint} is not allowed"

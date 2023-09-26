@@ -90,5 +90,23 @@ def create_tables():
     db.commit()
 
 
+def find(command):
+    db = connect()
+    cur = db.cursor()
+    cur.execute(command)
+    res = cur.fetchall()
+    cur.close()
+    db.close()
+    return res
+
+
+def find_contract(contract_address):
+    return find(f"SELECT contract_id FROM contracts WHERE contract_address='{contract_address}'")
+
+
+def find_entrypoint(contract_id, entrypoint):
+    return find(f"SELECT entrypoint_id FROM entrypoints WHERE contract_id='{contract_id}'")
+
+
 if __name__ == '__main__':
     connect()
