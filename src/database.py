@@ -101,12 +101,26 @@ def find(command):
 
 
 def find_contract(contract_address):
-    return find(f"SELECT contract_id FROM contracts WHERE contract_address='{contract_address}'")
+    return find(f"SELECT contract_id \
+                FROM contracts WHERE contract_address='{contract_address}'")
 
 
 def find_entrypoint(contract_id, entrypoint):
-    return find(f"SELECT entrypoint_id FROM entrypoints WHERE contract_id='{contract_id}'")
+    return find(f"SELECT entrypoint_id \
+                FROM entrypoints WHERE contract_id='{contract_id}'")
 
+
+def update_credit(contract_address, amount):
+    db = connect()
+    cur = db.cursor()
+    req = f"""UPDATE credits
+        SET credit_amount = credit_amount + {amount}
+        FROM contracts c
+        WHERE credit_id = c.contract_credit
+        AND c.contract_address = '{contract_address}'"""
+    cur.execute(req)
+    cur.close()
+    db.commit()
 
 if __name__ == '__main__':
     connect()
