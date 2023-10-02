@@ -149,27 +149,30 @@ async def post_operation(call_data: CallData):
     for operation in call_data.operations:
         contract_address = operation["destination"]
 
-        # Transfers to implicit accounts are always accepted
-        # FIXME we might want to change that
-        if contract_address.startswith("KT"):
-            contracts = db.find_contract(contract_address)
-            if len(contracts) == 0:
-                raise HTTPException(
+        # Transfers to implicit accounts are always refused
+        if not contract_address.startswith("KT"):
+            raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail=f"Target {contract_address} is not allowed"
                 )
-
-            contract_id = contracts[0][0]  # First row
-            entrypoint = operation["parameters"]["entrypoint"]
-            entrypoints = db.find_entrypoint(
-                contract_id,
-                entrypoint
+        contracts = db.find_contract(contract_address)
+        if len(contracts) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Target {contract_address} is not allowed"
             )
-            if len(entrypoints) == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Entrypoint {entrypoint} is not allowed"
-                )
+
+        contract_id = contracts[0][0]  # First row
+        entrypoint = operation["parameters"]["entrypoint"]
+        entrypoints = db.find_entrypoint(
+            contract_id,
+            entrypoint
+        )
+        if len(entrypoints) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Entrypoint {entrypoint} is not allowed"
+            )
     op = ptz.bulk(*[
         ptz.transaction(
             source=ptz.key.public_key_hash(),
