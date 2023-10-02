@@ -51,7 +51,6 @@ def find_fees(global_tx, payer_key):
     returns the operation indice as well, as the length of the fees
     of one operation in the bulk may vary"""
     op_result = global_tx["contents"]
-    print(op_result)
     fees = [
         (z, x["destination"])
           for x in op_result
@@ -60,7 +59,6 @@ def find_fees(global_tx, payer_key):
           for z in y
           if z.get("contract", "") == payer_key
     ]
-    print(fees)
     return fees
 
 
@@ -79,8 +77,16 @@ class TezosManager:
         self.ops_queue[sender] = operation
         while self.results[sender] == "waiting":
             # TODO wait the right amount of time
-            await asyncio.sleep(self.block_time)
-        return self.results[sender]
+            await asyncio.sleep(1)
+
+        if self.results[sender] == "waiting":
+            raise Exception()
+
+        return {
+            "result": "ok",
+            "transaction_hash": self.results[sender]["transaction"].hash(),
+        }
+
     async def update_fees(self, posted_tx):
         nb_try = 0
         while nb_try < 4:
@@ -120,10 +126,14 @@ class TezosManager:
             n_ops = len(acceptable_operations)
             print(f"found {n_ops} valid operations to send")
             if n_ops > 0:
-                posted_bulk = ptz.bulk(*acceptable_operations.values()).send()
-                for k in acceptable_operations:
+                # Post all the correct operations together and get the
+                # result from the RPC to know what the real fees were
+                posted_tx = ptz.bulk(*acceptable_operations.values()).send()
+                for i, k in enumerate(acceptable_operations):
                     assert self.results[k] != "failing"
-                    self.results[k] = posted_bulk.hash()
+                    self.results[k] = {"transaction": posted_tx}
+
+                asyncio.create_task(self.update_fees(posted_tx))
             self.ops_queue = dict()
             print("Tezos loop executed")
 
@@ -201,8 +211,7 @@ async def post_operation(call_data: CallData):
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Operation is invalid"
         )
-
-    return {"hash": result}
+    return result
 
 loop = asyncio.get_event_loop()
 try:
