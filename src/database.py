@@ -122,5 +122,24 @@ def update_credit(contract_address, amount):
     cur.close()
     db.commit()
 
+def find_contracts_by_user(user_address):
+    return find(f"SELECT * FROM contracts JOIN users ON contracts.owner_id = users.user_id WHERE users.user_address = '{user_address}'")
+
+def find_user(user_address):
+    return find(f"SELECT users.user_id \
+                FROM users WHERE users.user_address='{user_address}'")
+
+def add_user(user_address, user_name):
+    db = connect()
+    cur = db.cursor()
+    req = f"""
+        INSERT INTO users ("user_name", "user_address") VALUES ('{user_name}', '{user_address}') RETURNING *;
+    """
+    cur.execute(req)
+    new_user = cur.fetchone()
+    cur.close()
+    db.commit()
+    return new_user
+
 if __name__ == '__main__':
     connect()

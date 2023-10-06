@@ -12,6 +12,8 @@ from pydantic import BaseModel
 
 from . import database as db
 
+from .routes import routes
+
 load_dotenv()
 TEZOS_RPC = os.getenv('TEZOS_RPC')
 SECRET_KEY_CMD = os.getenv('SECRET_KEY_CMD')
@@ -27,6 +29,8 @@ assert SECRET_KEY is not None and len(SECRET_KEY) > 0, \
     "Could not read secret key"
 
 app = FastAPI()
+
+app.include_router(routes.router)
 
 admin_key = pytezos.Key.from_encoded_key(
     SECRET_KEY
