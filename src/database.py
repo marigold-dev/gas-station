@@ -1,6 +1,8 @@
 import psycopg2
 from configparser import ConfigParser
-
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 def config(filename='sql/database.ini', section='postgresql'):
     parser = ConfigParser()
@@ -33,6 +35,18 @@ def connect():
         if conn is not None:
             conn.close()
             print('Database connection closed.')
+
+try:
+    params = config()
+    print(params)
+    engine = create_engine(
+        url=params['url']
+    )
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    Base = declarative_base()
+except (Exception) as e:
+    print(e)
+    pass
 
 
 def create_tables():
@@ -89,57 +103,14 @@ def create_tables():
     cur.close()
     db.commit()
 
-
-def find(command):
-    db = connect()
-    cur = db.cursor()
-    cur.execute(command)
-    res = cur.fetchall()
-    cur.close()
-    db.close()
-    return res
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
-def find_contract(contract_address):
-    return find(f"SELECT contract_id \
-                FROM contracts WHERE contract_address='{contract_address}'")
 
-
-def find_entrypoint(contract_id, entrypoint):
-    return find(f"SELECT entrypoint_id \
-                FROM entrypoints WHERE contract_id='{contract_id}'")
-
-
-def update_credit(contract_address, amount):
-    db = connect()
-    cur = db.cursor()
-    req = f"""UPDATE credits
-        SET credit_amount = credit_amount + {amount}
-        FROM contracts c
-        WHERE credit_id = c.contract_credit
-        AND c.contract_address = '{contract_address}'"""
-    cur.execute(req)
-    cur.close()
-    db.commit()
-
-def find_contracts_by_user(user_address):
-    return find(f"SELECT * FROM contracts JOIN users ON contracts.owner_id = users.user_id WHERE users.user_address = '{user_address}'")
-
-def find_user(user_address):
-    return find(f"SELECT users.user_id \
-                FROM users WHERE users.user_address='{user_address}'")
-
-def add_user(user_address, user_name):
-    db = connect()
-    cur = db.cursor()
-    req = f"""
-        INSERT INTO users ("user_name", "user_address") VALUES ('{user_name}', '{user_address}') RETURNING *;
-    """
-    cur.execute(req)
-    new_user = cur.fetchone()
-    cur.close()
-    db.commit()
-    return new_user
-
-if __name__ == '__main__':
-    connect()
+# if __name__ == '__main__':
+#     connect()

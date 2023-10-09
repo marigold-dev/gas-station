@@ -1,4 +1,4 @@
-from . import init_db
+from tests import init_db
 from src import database
 
 

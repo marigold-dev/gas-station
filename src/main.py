@@ -13,6 +13,7 @@ from pydantic import BaseModel
 from . import database as db
 
 from .routes import routes
+from . import models
 
 load_dotenv()
 TEZOS_RPC = os.getenv('TEZOS_RPC')
@@ -27,6 +28,8 @@ else:
 assert TEZOS_RPC is not None, "Please specify a TEZOS_RPC"
 assert SECRET_KEY is not None and len(SECRET_KEY) > 0, \
     "Could not read secret key"
+
+models.Base.metadata.create_all(bind=db.engine)
 
 app = FastAPI()
 

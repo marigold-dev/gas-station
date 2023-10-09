@@ -1,3 +1,5 @@
 *.ipynb
 *.tz
 __pycache__/
+.env
+.vscode
