@@ -31,6 +31,10 @@ class EntrypointCreation(BaseModel):
   name: str
   is_enabled: bool
 
+class EntrypointUpdate(BaseModel):
+   id: UUID4
+   is_enabled: bool
+
 # Contracts
 class ContractBase(BaseModel):
   address: str
@@ -44,3 +48,4 @@ class Contract(ContractBase):
 class ContractCreation(ContractBase):
   name: str
   entrypoints: List[EntrypointCreation]
+

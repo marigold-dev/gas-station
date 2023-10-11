@@ -80,3 +80,8 @@ async def get_entrypoint(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Entrypoint not found."
         )
     return entrypoint
+
+@router.put("/entrypoints", response_model=list[schemas.Entrypoint])
+async def update_entrypoints(entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)):
+    return crud.update_entrypoints(db, entrypoints)
+

@@ -50,7 +50,12 @@ def update_credits(db: Session, user_update: schemas.UserUpdateCredit):
     db.commit()
     return db.query(models.User).filter(models.User.address == user_update.address).first()
 
-
+def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate]):
+    for e in entrypoints:
+        db.query(models.Entrypoint).filter(models.Entrypoint.id == e.id).update({'is_enabled': e.is_enabled})
+    db.commit()
+    entrypoints_ids = list(map(lambda e: e.id, entrypoints))
+    return db.query(models.Entrypoint).filter(models.Entrypoint.id.in_(entrypoints_ids)).all()
 
 # ---- WIP
 # def update_credit(contract_address, amount):
