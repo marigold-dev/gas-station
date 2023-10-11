@@ -41,7 +41,8 @@ admin_key = pytezos.Key.from_encoded_key(
 ptz = pytezos.pytezos.using(TEZOS_RPC, admin_key)
 
 origins = [
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:3000"
 ]
 
 app.add_middleware(
@@ -117,7 +118,7 @@ class TezosManager:
             # TODO catch errors
 
             n_ops = len(self.ops_queue)
-            print(f"found {n_ops} operations to send")
+            # print(f"found {n_ops} operations to send")
             acceptable_operations = OrderedDict()
             for sender in self.ops_queue:
                 op = self.ops_queue[sender]
@@ -131,7 +132,7 @@ class TezosManager:
                     self.results[sender] = "failing"
 
             n_ops = len(acceptable_operations)
-            print(f"found {n_ops} valid operations to send")
+            # print(f"found {n_ops} valid operations to send")
             if n_ops > 0:
                 # Post all the correct operations together and get the
                 # result from the RPC to know what the real fees were
@@ -142,7 +143,7 @@ class TezosManager:
 
                 asyncio.create_task(self.update_fees(posted_tx))
             self.ops_queue = dict()
-            print("Tezos loop executed")
+            # print("Tezos loop executed")
 
 
 tezos_manager = TezosManager(ptz)

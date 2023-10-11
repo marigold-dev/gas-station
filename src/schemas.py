@@ -1,4 +1,5 @@
 from pydantic import BaseModel, UUID4
+from typing import List
 
 
 # Users
@@ -8,9 +9,14 @@ class UserBase(BaseModel):
 class User(UserBase):
   id: UUID4
   name: str
+  credits: int
 
 class UserCreation(UserBase):
     name: str
+
+class UserUpdateCredit(BaseModel):
+  address: str
+  credits: int
 
 # Entrypoints
 class EntrypointBase(BaseModel):
@@ -21,6 +27,10 @@ class EntrypointBase(BaseModel):
 class Entrypoint(EntrypointBase):
   id: UUID4
 
+class EntrypointCreation(BaseModel):
+  name: str
+  is_enabled: bool
+
 # Contracts
 class ContractBase(BaseModel):
   address: str
@@ -29,6 +39,8 @@ class ContractBase(BaseModel):
 class Contract(ContractBase):
   id: UUID4
   name: str
-  credit_id: UUID4
+  entrypoints: List[Entrypoint]
 
-
+class ContractCreation(ContractBase):
+  name: str
+  entrypoints: List[EntrypointCreation]
