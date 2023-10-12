@@ -3,6 +3,5 @@ from src import database
 
 
 def test_foo():
-    init_db.clear_tables()
-    database.create_tables()
+    init_db.truncate_db()
     init_db.insert_data()

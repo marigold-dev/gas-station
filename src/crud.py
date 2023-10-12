@@ -1,3 +1,5 @@
+from typing import Optional
+import uuid
 from sqlalchemy.orm import Session
 from . import models, schemas
 
@@ -27,7 +29,7 @@ def get_entrypoints(db: Session, contract_address: str):
     contract = get_contract(db, contract_address)
     return contract.entrypoints if contract else []
 
-def get_entrypoint(db: Session, contract_address: str, name: str):
+def get_entrypoint(db: Session, contract_address: str, name: str) -> Optional[models.Entrypoint]:
     entrypoints = get_entrypoints(db, contract_address)
     entrypoint = list(filter(lambda e: e.name == name, entrypoints))
     if len(entrypoint) == 0:
@@ -46,8 +48,11 @@ def create_contract(db: Session, contract: schemas.ContractCreation):
     return db_contract
 
 def update_credits(db: Session, user_update: schemas.UserUpdateCredit):
-    db.query(models.User).filter(models.User.address == user_update.address).update({'credits': user_update.credits})
-    db.commit()
+    print(user_update)
+    db_user = db.query(models.User).filter(models.User.address == user_update.address).first()
+    if (db_user):
+        db.query(models.User).filter(models.User.address == user_update.address).update({'credits': db_user.credits + user_update.credits})
+        db.commit()
     return db.query(models.User).filter(models.User.address == user_update.address).first()
 
 def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate]):
@@ -57,15 +62,17 @@ def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate])
     entrypoints_ids = list(map(lambda e: e.id, entrypoints))
     return db.query(models.Entrypoint).filter(models.Entrypoint.id.in_(entrypoints_ids)).all()
 
-# ---- WIP
-# def update_credit(contract_address, amount):
-#     db = connect()
-#     cur = db.cursor()
-#     req = f"""UPDATE credits
-#         SET credit_amount = credit_amount + {amount}
-#         FROM contracts c
-#         WHERE credit_id = c.contract_credit
-#         AND c.contract_address = '{contract_address}'"""
-#     cur.execute(req)
-#     cur.close()
-#     db.commit()
+def create_operation(db: Session, operation: schemas.CreateOperation):
+    db_operation = models.Operation(**{"contract_id":  operation.contract_id, "entrypoint_id": operation.entrypoint_id})
+    db.add(db_operation)
+    db.commit()
+    db.refresh(db_operation)
+    return db_operation
+
+def update_operation(db: Session, operation_id: str, transaction_hash: str, status: str):
+    db_op = db.query(models.Operation).filter(models.Operation.id == operation_id).update({'transaction_hash': transaction_hash, "status": status})
+    db.commit()
+
+def update_amount_operation(db: Session,hash: str, amount: int):
+    db_op = db.query(models.Operation).filter(models.Operation.transaction_hash == hash).update({'cost': amount})
+    db.commit()

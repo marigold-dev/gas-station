@@ -32,6 +32,7 @@ class Contract(Base):
 
   owner = relationship("User", back_populates="contracts")
   entrypoints = relationship("Entrypoint", back_populates="contract")
+  operations = relationship("Operation", back_populates='contract')
 
 
 
@@ -53,3 +54,19 @@ class Entrypoint(Base):
   contract_id = Column(UUID(as_uuid=True), ForeignKey('contracts.id'))
 
   contract = relationship("Contract", back_populates='entrypoints')
+  operations = relationship("Operation", back_populates='entrypoint')
+
+
+# ------- OPERATION ------- #
+class Operation(Base):
+  __tablename__ = "operations"
+
+  id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  cost = Column(Integer)
+  contract_id = Column(UUID(as_uuid=True), ForeignKey('contracts.id'))
+  entrypoint_id = Column(UUID(as_uuid=True), ForeignKey('entrypoints.id'))
+  transaction_hash = Column(String)
+  status = Column(String) # TODO ENUM
+
+  contract = relationship("Contract", back_populates="operations")
+  entrypoint = relationship("Entrypoint", back_populates="operations")

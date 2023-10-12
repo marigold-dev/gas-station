@@ -1,5 +1,5 @@
 from pydantic import BaseModel, UUID4
-from typing import List
+from typing import List, Any
 
 
 # Users
@@ -32,8 +32,8 @@ class EntrypointCreation(BaseModel):
   is_enabled: bool
 
 class EntrypointUpdate(BaseModel):
-   id: UUID4
-   is_enabled: bool
+  id: UUID4
+  is_enabled: bool
 
 # Contracts
 class ContractBase(BaseModel):
@@ -48,4 +48,20 @@ class Contract(ContractBase):
 class ContractCreation(ContractBase):
   name: str
   entrypoints: List[EntrypointCreation]
+
+
+# Operations
+# TODO: right now the sender isn't checked, as we use permits anyway
+class CallData(BaseModel):
+    sender: str
+    operations: list[dict[str, Any]]
+
+class CreateOperation(BaseModel):
+  #  amount: int
+  contract_id: str
+  entrypoint_id: str
+  #  transaction_hash: str
+
+class UpdateHashOperation(BaseModel):
+  transaction_hash: str
 
