@@ -70,7 +70,7 @@ class TezosManager:
         # TODO group requests
         try:
           for (fee, contract) in fees:
-              crud.update_credits(db, CreditUpdate(contract_address=contract, amount=int(fee["change"])))
+              crud.update_credits(db, amount=int(fee["change"]), address=contract)
               crud.update_amount_operation(db, op_result['hash'], int(fee["change"]))
         finally:
             db.close()

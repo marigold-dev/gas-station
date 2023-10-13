@@ -165,10 +165,10 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
 # Credits
 @router.put("/credits", response_model=schemas.Credit)
 async def update_credits(credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)):
-    credits = crud.update_credits(db, credits)
+    credits = crud.update_credits(db, credits.amount, credits.contract_address)
     if (credits is None):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Contrat or credit not found."
             )
-    return crud.update_credits(db, credits)
+    return credits
