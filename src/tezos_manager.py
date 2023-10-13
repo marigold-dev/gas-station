@@ -6,7 +6,7 @@ from fastapi import Depends
 from src import database
 from .pytezos import ptz, pytezos
 from . import crud
-from .schemas import UserUpdateCredit
+from .schemas import CreditUpdate
 from pytezos.rpc.errors import MichelsonError
 from sqlalchemy.orm import Session
 
@@ -53,7 +53,7 @@ class TezosManager:
             "transaction_hash": self.results[sender]["transaction"].hash(),
         }
 
-    async def update_fees(self, posted_tx, customer_addr: str): # TODO : @Arthur je suis pas sur de ça
+    async def update_fees(self, posted_tx): # TODO : @Arthur je suis pas sur de ça
         # Use session directly because we can't use Depends outside a FastAPI router (I think...)
         db = database.SessionLocal()
         nb_try = 0
@@ -70,8 +70,7 @@ class TezosManager:
         # TODO group requests
         try:
           for (fee, contract) in fees:
-              #TODO check if the user is owner of contract
-              crud.update_credits(db, UserUpdateCredit(address=customer_addr, credits=int(fee["change"])))
+              crud.update_credits(db, CreditUpdate(contract_address=contract, amount=int(fee["change"])))
               crud.update_amount_operation(db, op_result['hash'], int(fee["change"]))
         finally:
             db.close()
@@ -106,9 +105,7 @@ class TezosManager:
                 for i, k in enumerate(acceptable_operations):
                     assert self.results[k] != "failing"
                     self.results[k] = {"transaction": posted_tx}
-                    print('k', k)
-                    customer_addr = k
-                asyncio.create_task(self.update_fees(posted_tx, customer_addr))
+                asyncio.create_task(self.update_fees(posted_tx))
             self.ops_queue = dict()
             print("Tezos loop executed")
 

@@ -46,14 +46,6 @@ def create_contract(db: Session, contract: schemas.ContractCreation):
     db.commit()
     return db_contract
 
-def update_credits(db: Session, user_update: schemas.UserUpdateCredit):
-    print(user_update)
-    db_user = db.query(models.User).filter(models.User.address == user_update.address).first()
-    if (db_user):
-        db.query(models.User).filter(models.User.address == user_update.address).update({'credits': db_user.credits + user_update.credits})
-        db.commit()
-    return db.query(models.User).filter(models.User.address == user_update.address).first()
-
 def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate]):
     for e in entrypoints:
         db.query(models.Entrypoint).filter(models.Entrypoint.id == e.id).update({'is_enabled': e.is_enabled})
@@ -75,3 +67,16 @@ def update_operation(db: Session, operation_id: str, transaction_hash: str, stat
 def update_amount_operation(db: Session,hash: str, amount: int):
     db_op = db.query(models.Operation).filter(models.Operation.transaction_hash == hash).update({'cost': amount})
     db.commit()
+
+def update_credits(db: Session, credit_update: schemas.CreditUpdate):
+    print(credit_update)
+    db_contract = db.query(models.Contract).filter(models.Contract.address == credit_update.contract_address).first()
+    if not db_contract:
+        return None
+    credit_query = db.query(models.Credit).filter(models.Credit.owner_id == db_contract.owner_id)
+    db_credit = credit_query.first()
+    if not db_credit:
+        return None
+    credit_query.update({'amount': db_credit.amount + credit_update.amount})
+    db.commit()
+    return credit_query.first()

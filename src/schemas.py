@@ -9,14 +9,9 @@ class UserBase(BaseModel):
 class User(UserBase):
   id: UUID4
   name: str
-  credits: int
 
 class UserCreation(UserBase):
     name: str
-
-class UserUpdateCredit(BaseModel):
-  address: str
-  credits: int
 
 # Entrypoints
 class EntrypointBase(BaseModel):
@@ -55,7 +50,6 @@ class ContractCreation(ContractBase):
 class CallData(BaseModel):
     sender: str
     operations: list[dict[str, Any]]
-    customer_address: str
 
 class CreateOperation(BaseModel):
   #  amount: int
@@ -66,3 +60,12 @@ class CreateOperation(BaseModel):
 class UpdateHashOperation(BaseModel):
   transaction_hash: str
 
+# Credits
+class CreditUpdate(BaseModel):
+  contract_address: str
+  amount: int
+
+class Credit(BaseModel):
+  id: UUID4
+  amount: int
+  owner_id: UUID4

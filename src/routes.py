@@ -32,11 +32,6 @@ async def create_user(user: schemas.UserCreation, db: Session = Depends(database
     return crud.create_user(db, user)
 
 
-@router.put("/users/credits", response_model=schemas.User)
-async def update_credits(credits: schemas.UserUpdateCredit, db: Session = Depends(database.get_db)):
-    return crud.update_credits(db, credits)
-
-
 # Contracts
 @router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
 async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
@@ -99,16 +94,6 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
             detail=f"Empty operations list"
         )
     operation_ids = []
-    sender = call_data.sender
-    customer_address = call_data.customer_address
-    print('sender', sender)
-    print('customer_address', customer_address)
-    customer = crud.get_user(db, customer_address)
-    if not customer:
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Customer {customer_address} not found"
-            )
     # TODO: check that amount=0?
     for operation in call_data.operations:
         print(operation)
@@ -125,13 +110,6 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Target {contract_address} is not allowed"
-            )
-
-        # TODO see if it is relevant
-        if str(contract.owner_id) != str(customer.id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Customer {customer_address} is not the owner of contract {contract_address}"
             )
 
 
@@ -182,3 +160,15 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
             detail=f"Operation is invalid"
         )
     return result
+
+
+# Credits
+@router.put("/credits", response_model=schemas.Credit)
+async def update_credits(credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)):
+    credits = crud.update_credits(db, credits)
+    if (credits is None):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contrat or credit not found."
+            )
+    return crud.update_credits(db, credits)
