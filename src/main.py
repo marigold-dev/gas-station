@@ -25,6 +25,7 @@ app.add_middleware(
 )
 
 loop = asyncio.get_event_loop()
+
 try:
     asyncio.ensure_future(tezos_manager.tezos_manager.main_loop())
 except KeyboardInterrupt:

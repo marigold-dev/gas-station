@@ -5,7 +5,7 @@ import src.crud as crud
 import src.schemas as schemas
 
 from sqlalchemy.orm import Session
-from .pytezos import ptz, pytezos
+from .pytezos import ptz
 from .tezos_manager import tezos_manager
 from pytezos.rpc.errors import MichelsonError
 
@@ -99,6 +99,16 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
             detail=f"Empty operations list"
         )
     operation_ids = []
+    sender = call_data.sender
+    customer_address = call_data.customer_address
+    print('sender', sender)
+    print('customer_address', customer_address)
+    customer = crud.get_user(db, customer_address)
+    if not customer:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Customer {customer_address} not found"
+            )
     # TODO: check that amount=0?
     for operation in call_data.operations:
         print(operation)
@@ -116,6 +126,14 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Target {contract_address} is not allowed"
             )
+
+        # TODO see if it is relevant
+        if str(contract.owner_id) != str(customer.id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Customer {customer_address} is not the owner of contract {contract_address}"
+            )
+
 
         entrypoint_name = operation["parameters"]["entrypoint"]
         print(contract_address, entrypoint_name)
@@ -153,12 +171,11 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Operation is invalid"
             )
-    print(result["transaction_hash"], result['result'])
+
     for op_id in operation_ids:
         crud.update_operation(db, op_id, result["transaction_hash"], status="ok" if result['result'] == 'ok' else 'failed')
-    # if result == 'ok':
-        # crud.create_operation(db, schemas.CreateOperation(contract_address=operation["destination"], entrypoint_name=operation["parameters"]["entrypoint"],transaction_hash=op['transaction_hash']))
-    if result == "failing":
+
+    if result["result"] == "failing":
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_409_CONFLICT,

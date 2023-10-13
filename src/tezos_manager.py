@@ -69,9 +69,6 @@ class TezosManager:
         fees = find_fees(op_result, ptz.key.public_key_hash())
         # TODO group requests
         try:
-          print(fees)
-          print('---')
-          # print(op_result)
           for (fee, contract) in fees:
               #TODO check if the user is owner of contract
               crud.update_credits(db, UserUpdateCredit(address=customer_addr, credits=int(fee["change"])))

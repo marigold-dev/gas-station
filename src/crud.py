@@ -1,18 +1,17 @@
 from typing import Optional
-import uuid
 from sqlalchemy.orm import Session
 from . import models, schemas
 
 
 def get_user(db: Session, address: str):
-  return db.query(models.User).filter(models.User.address == address).first()
+    return db.query(models.User).filter(models.User.address == address).first()
 
 def create_user(db: Session, user: schemas.UserCreation):
-  db_user = models.User(**user.model_dump())
-  db.add(db_user)
-  db.commit()
-  db.refresh(db_user)
-  return db_user
+    db_user = models.User(**user.model_dump())
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 def get_contracts_by_user(db: Session, user_address: str):
     user = get_user(db, user_address)

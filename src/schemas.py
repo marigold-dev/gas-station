@@ -55,6 +55,7 @@ class ContractCreation(ContractBase):
 class CallData(BaseModel):
     sender: str
     operations: list[dict[str, Any]]
+    customer_address: str
 
 class CreateOperation(BaseModel):
   #  amount: int
