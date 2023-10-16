@@ -1,0 +1,53 @@
+name: Docker ghostnet
+
+on:
+  push:
+    branches:
+      - 'release-ghostnet'
+      - 'main' # Remove this line when we want more controlled releases
+  pull_request:
+    branches:
+      - 'release-ghostnet'
+    types:
+      - closed
+  workflow_dispatch:
+
+jobs:
+  ui:
+    strategy:
+      matrix:
+        network: [ghostnet]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3.0.0
+        with:
+          submodules: true
+
+      - name: Set outputs
+        id: vars
+        run: |
+          echo "date=$(date +%Y-%m-%dT%H-%M-%S)" >> "${GITHUB_OUTPUT}"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        uses: docker/Setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push release version
+        uses: docker/build-push-action@v3
+        with:
+          file: ./Dockerfile.${{ matrix.network }}
+          context: ./
+          push: true
+          tags: |
+            ghcr.io/marigold-dev/gas-station-api-${{ matrix.network }}:stable
+            ghcr.io/marigold-dev/gas-station-api-${{ matrix.network }}:${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.sha_short }}-release
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+

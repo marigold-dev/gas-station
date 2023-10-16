@@ -1,0 +1,27 @@
+# Builder stage
+FROM python:3.9.12-slim AS builder
+RUN apt-get update && \
+apt-get install -y libpq-dev gcc libgmp-dev libsodium-dev
+# Create the virtual environment
+RUN python -m venv /opt/venv
+# Activate the virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+# Install pytest
+RUN pip install pytest
+# Operational stage
+FROM python:3.9.12-slim
+RUN apt-get update && \
+apt-get install -y libpq-dev libsodium-dev vim procps
+# && \ rm -rf /var/lib/apt/lists/*
+# Get the virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PYTHONDONTWRITEBYTECODE=1 \
+PYTHONUNBUFFERED=1 \
+PATH="/opt/venv/bin:$PATH"
+WORKDIR /app
+ADD . /app
+EXPOSE 8000
+# Run the command to start uWSGI
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
