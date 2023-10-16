@@ -3,6 +3,11 @@ INSERT INTO users("id", "name", "address")
         ('164b18e2-205b-47fa-8fa5-e9961b3a8437', 'Alfred', 'tz1VLKbNYhmfyQSZzsdLWrbtVbyjsRf9qEjN'),
         ('b8c23360-9a81-4450-93d8-ea32a2d7467e', 'Quentin', 'tz1YdFws2E182i25ezpHvEvcn4vh74XcMDFi');
 
+INSERT INTO credits("id", "amount", "owner_id")
+        VALUES
+        ('4dd87743-6893-4c00-b89b-67e0960d06a8', '10000000', '164b18e2-205b-47fa-8fa5-e9961b3a8437'),
+        ('b683c679-be44-4fd7-9f65-90aa01534bde', '643535536', 'b8c23360-9a81-4450-93d8-ea32a2d7467e');
+
 
 INSERT INTO contracts("id", "address", "name", "owner_id", "credit_id")
         VALUES
@@ -18,8 +23,3 @@ INSERT INTO entrypoints("id", "name", "is_enabled", "contract_id")
         ('18e7ee0d-6e16-4392-9cc7-1609d6f84c0c', 'stake', true, 'f08660dc-34a8-4575-b53c-19d362296ead'),
         ('33532a9c-51e7-4f88-b60f-67530122c349', 'unstake', true, 'f08660dc-34a8-4575-b53c-19d362296ead'),
         ('764d5857-1201-4a69-bbe8-137e0326a830', 'dummy', false, '4dfbd6f2-ca41-48d0-adc5-9c0bef8127d1');
-
-INSERT INTO credits("id", "amount", "owner_id")
-        VALUES
-        ('4dd87743-6893-4c00-b89b-67e0960d06a8', '10000000', '164b18e2-205b-47fa-8fa5-e9961b3a8437'),
-        ('b683c679-be44-4fd7-9f65-90aa01534bde', '643535536', 'b8c23360-9a81-4450-93d8-ea32a2d7467e');
