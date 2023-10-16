@@ -4,11 +4,24 @@ import asyncio
 from fastapi import Depends
 
 from src import database
-from .pytezos import ptz, pytezos
+# from .pytezos import ptz, pytezos
 from . import crud
 from .schemas import CreditUpdate
 from pytezos.rpc.errors import MichelsonError
+import pytezos
 from sqlalchemy.orm import Session
+
+from . import config
+
+# Config stuff for pytezos
+assert config.SECRET_KEY is not None and len(config.SECRET_KEY) > 0, \
+  "Could not read secret key"
+
+admin_key = pytezos.pytezos.key.from_encoded_key(
+    config.SECRET_KEY
+)
+ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
+
 
 
 def find_fees(global_tx, payer_key):
@@ -18,11 +31,13 @@ def find_fees(global_tx, payer_key):
     op_result = global_tx["contents"]
     fees = [
         (z, x["destination"])
-          for x in op_result
-          for y in (x["metadata"].get("operation_result", {}).get("balance_updates", {}),
-                    x["metadata"].get("balance_updates", {}))
-          for z in y
-          if z.get("contract", "") == payer_key
+        for x in op_result
+        for y in (
+            x["metadata"].get("operation_result", {}).get("balance_updates", {}),
+            x["metadata"].get("balance_updates", {}),
+        )
+        for z in y
+        if z.get("contract", "") == payer_key
     ]
     return fees
 
@@ -34,7 +49,6 @@ class TezosManager:
         self.ptz = ptz
         constants = self.ptz.shell.block.context.constants()
         self.block_time = int(constants["minimal_block_delay"])
-
 
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
@@ -53,7 +67,7 @@ class TezosManager:
             "transaction_hash": self.results[sender]["transaction"].hash(),
         }
 
-    async def update_fees(self, posted_tx): # TODO : @Arthur je suis pas sur de ça
+    async def update_fees(self, posted_tx):
         # Use session directly because we can't use Depends outside a FastAPI router (I think...)
         db = database.SessionLocal()
         nb_try = 0
@@ -69,9 +83,9 @@ class TezosManager:
         fees = find_fees(op_result, ptz.key.public_key_hash())
         # TODO group requests
         try:
-          for (fee, contract) in fees:
-              crud.update_credits(db, amount=int(fee["change"]), address=contract)
-              crud.update_amount_operation(db, op_result['hash'], int(fee["change"]))
+            for fee, contract in fees:
+                crud.update_credits(db, amount=int(fee["change"]), address=contract)
+                crud.update_amount_operation(db, op_result["hash"], int(fee["change"]))
         finally:
             db.close()
 
@@ -101,12 +115,13 @@ class TezosManager:
                 # Post all the correct operations together and get the
                 # result from the RPC to know what the real fees were
                 posted_tx = ptz.bulk(*acceptable_operations.values()).send()
-                customer_addr=''
+                customer_addr = ""
                 for i, k in enumerate(acceptable_operations):
                     assert self.results[k] != "failing"
                     self.results[k] = {"transaction": posted_tx}
                 asyncio.create_task(self.update_fees(posted_tx))
             self.ops_queue = dict()
             print("Tezos loop executed")
+
 
 tezos_manager = TezosManager(ptz)

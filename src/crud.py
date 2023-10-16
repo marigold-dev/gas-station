@@ -1,10 +1,19 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
+
+from src.utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 from . import models, schemas
+from sqlalchemy.exc import NoResultFound
 
 
 def get_user(db: Session, address: str):
-    return db.query(models.User).filter(models.User.address == address).first()
+    """
+    Return a models.User or raise UserNotFound exception
+    """
+    try:
+        return db.query(models.User).filter(models.User.address == address).one()
+    except NoResultFound as e:
+        raise UserNotFound() from e
 
 def create_user(db: Session, user: schemas.UserCreation):
     db_user = models.User(**user.model_dump())
@@ -14,34 +23,47 @@ def create_user(db: Session, user: schemas.UserCreation):
     return db_user
 
 def get_contracts_by_user(db: Session, user_address: str):
+    """
+    Return a list of models.Contracts or raise UserNotFound exception
+    """
     user = get_user(db, user_address)
-    if not user:
-        return None
     return user.contracts
 
 
 def get_contract(db: Session, address: str):
-    return db.query(models.Contract).filter(models.Contract.address == address).first()
+    """
+    Return a models.Contract or raise ContractNotFound exception
+    """
+    try:
+        return db.query(models.Contract).filter(models.Contract.address == address).one()
+    except NoResultFound as e:
+        raise ContractNotFound() from e
 
-
-def get_entrypoints(db: Session, contract_address: str):
+def get_entrypoints(db: Session, contract_address: str) -> List[models.Entrypoint]:
+    """
+    Return a list of models.Contract or raise ContractNotFound exception
+    """
     contract = get_contract(db, contract_address)
-    return contract.entrypoints if contract else []
+    return contract.entrypoints
 
 def get_entrypoint(db: Session, contract_address: str, name: str) -> Optional[models.Entrypoint]:
+    """
+    Return a models.Entrypoint or raise EntrypointNotFound exception
+    """
     entrypoints = get_entrypoints(db, contract_address)
-    entrypoint = list(filter(lambda e: e.name == name, entrypoints))
+    entrypoint = [e for e in entrypoints if e.name == name] # type: ignore
     if len(entrypoint) == 0:
-        return None
+        raise EntrypointNotFound()
     return entrypoint[0]
 
 def create_contract(db: Session, contract: schemas.ContractCreation):
+    #TODO rewrite this with transaction or something else better
     c = {k:v for k,v in contract.model_dump().items() if k not in ['entrypoints']}
     db_contract = models.Contract(**c)
     db.add(db_contract)
     db.commit()
     db.refresh(db_contract)
-    db_entrypoints =list(map(lambda e: models.Entrypoint(**e.model_dump(), contract_id=db_contract.id), contract.entrypoints))
+    db_entrypoints = [models.Entrypoint(**e.model_dump(), contract_id=db_contract.id) for e in contract.entrypoints]
     db.add_all(db_entrypoints)
     db.commit()
     return db_contract
@@ -61,21 +83,28 @@ def create_operation(db: Session, operation: schemas.CreateOperation):
     return db_operation
 
 def update_operation(db: Session, operation_id: str, transaction_hash: str, status: str):
-    db_op = db.query(models.Operation).filter(models.Operation.id == operation_id).update({'transaction_hash': transaction_hash, "status": status})
+    db.query(models.Operation).filter(models.Operation.id == operation_id).update({'transaction_hash': transaction_hash, "status": status})
     db.commit()
 
 def update_amount_operation(db: Session,hash: str, amount: int):
-    db_op = db.query(models.Operation).filter(models.Operation.transaction_hash == hash).update({'cost': amount})
+    db.query(models.Operation).filter(models.Operation.transaction_hash == hash).update({'cost': amount})
     db.commit()
 
 def update_credits(db: Session, amount: int, address: str):
-    db_contract = db.query(models.Contract).filter(models.Contract.address == address).first()
-    if not db_contract:
-        return None
-    credit_query = db.query(models.Credit).filter(models.Credit.owner_id == db_contract.owner_id)
-    db_credit = credit_query.first()
-    if not db_credit:
-        return None
-    credit_query.update({'amount': db_credit.amount + amount})
-    db.commit()
-    return credit_query.first()
+    """
+    Update a credit row and return a models.Credit. \n
+    Can raise a ContractNotFound exception or CreditNotFound exception.
+    """
+    try:
+        db_contract = get_contract(db, address)
+        credit_query = db.query(models.Credit).filter(models.Credit.owner_id == db_contract.owner_id)
+        try:
+            db_credit = credit_query.one()
+            credit_query.update({'amount': db_credit.amount + amount})
+            db.commit()
+            return credit_query.one()
+        except NoResultFound as e:
+            raise CreditNotFound() from e
+    except ContractNotFound as e:
+        pass
+

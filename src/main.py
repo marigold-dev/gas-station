@@ -3,7 +3,7 @@ import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import database as db, routes, models, tezos_manager
+from . import database as db, routes, models, tezos
 
 models.Base.metadata.create_all(bind=db.engine)
 
@@ -27,6 +27,6 @@ app.add_middleware(
 loop = asyncio.get_event_loop()
 
 try:
-    asyncio.ensure_future(tezos_manager.tezos_manager.main_loop())
+    asyncio.ensure_future(tezos.tezos_manager.main_loop())
 except KeyboardInterrupt:
     pass

@@ -30,6 +30,16 @@ class EntrypointUpdate(BaseModel):
   id: UUID4
   is_enabled: bool
 
+# Credits
+class CreditUpdate(BaseModel):
+  contract_address: str
+  amount: int
+
+class Credit(BaseModel):
+  id: UUID4
+  amount: int
+  owner_id: UUID4
+
 # Contracts
 class ContractBase(BaseModel):
   address: str
@@ -39,6 +49,7 @@ class Contract(ContractBase):
   id: UUID4
   name: str
   entrypoints: List[Entrypoint]
+  credit: Credit | None
 
 class ContractCreation(ContractBase):
   name: str
@@ -52,20 +63,5 @@ class CallData(BaseModel):
     operations: list[dict[str, Any]]
 
 class CreateOperation(BaseModel):
-  #  amount: int
   contract_id: str
   entrypoint_id: str
-  #  transaction_hash: str
-
-class UpdateHashOperation(BaseModel):
-  transaction_hash: str
-
-# Credits
-class CreditUpdate(BaseModel):
-  contract_address: str
-  amount: int
-
-class Credit(BaseModel):
-  id: UUID4
-  amount: int
-  owner_id: UUID4

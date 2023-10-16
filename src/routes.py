@@ -5,15 +5,15 @@ import src.crud as crud
 import src.schemas as schemas
 
 from sqlalchemy.orm import Session
-from .pytezos import ptz
-from .tezos_manager import tezos_manager
+from .tezos import tezos_manager, ptz
 from pytezos.rpc.errors import MichelsonError
-
+from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 
 
 router = APIRouter()
 
 #! API Routes
+
 
 # Healthcheck
 @router.get("/")
@@ -24,23 +24,31 @@ async def root():
 # Users
 @router.get("/users/{user_address}", response_model=schemas.User)
 async def get_user(user_address: str, db: Session = Depends(database.get_db)):
-    return crud.get_user(db, user_address)
+    try:
+        return crud.get_user(db, user_address)
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found.",
+        )
 
 
 @router.post("/users", response_model=schemas.User)
-async def create_user(user: schemas.UserCreation, db: Session = Depends(database.get_db)):
+async def create_user(
+    user: schemas.UserCreation, db: Session = Depends(database.get_db)
+):
     return crud.create_user(db, user)
 
 
 # Contracts
 @router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
 async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
-    contracts = crud.get_contracts_by_user(db, user_address)
-    if not contracts:
+    try:
+        return crud.get_contracts_by_user(db, user_address)
+    except UserNotFound as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
         )
-    return contracts
 
 
 @router.get("/contracts/{address}", response_model=schemas.Contract)
@@ -65,33 +73,41 @@ async def create_contract(
 async def get_entrypoints(
     contract_address: str, db: Session = Depends(database.get_db)
 ):
-    entrypoints = crud.get_entrypoints(db, contract_address)
-    return entrypoints
-
+    try:
+        return crud.get_entrypoints(db, contract_address)
+    except ContractNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
+        )
 
 @router.get("/entrypoints/{contract_address}/{name}", response_model=schemas.Entrypoint)
 async def get_entrypoint(
     contract_address: str, name: str, db: Session = Depends(database.get_db)
 ):
-    entrypoint = crud.get_entrypoint(db, contract_address, name)
-    if not entrypoint:
+    try:
+        return crud.get_entrypoint(db, contract_address, name)
+    except EntrypointNotFound as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Entrypoint not found."
         )
-    return entrypoint
+
 
 @router.put("/entrypoints", response_model=list[schemas.Entrypoint])
-async def update_entrypoints(entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)):
+async def update_entrypoints(
+    entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)
+):
     return crud.update_entrypoints(db, entrypoints)
 
 
 # Operations
 @router.post("/operation")
-async def post_operation(call_data: schemas.CallData, db: Session = Depends(database.get_db)):
+async def post_operation(
+    call_data: schemas.CallData, db: Session = Depends(database.get_db)
+):
     if len(call_data.operations) == 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Empty operations list"
+            detail=f"Empty operations list",
         )
     operation_ids = []
     # TODO: check that amount=0?
@@ -102,16 +118,15 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
         # Transfers to implicit accounts are always refused
         if not contract_address.startswith("KT"):
             raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Target {contract_address} is not allowed"
-                )
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Target {contract_address} is not allowed",
+            )
         contract = crud.get_contract(db, contract_address)
         if contract is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Target {contract_address} is not allowed"
+                detail=f"Target {contract_address} is not allowed",
             )
-
 
         entrypoint_name = operation["parameters"]["entrypoint"]
         print(contract_address, entrypoint_name)
@@ -120,21 +135,28 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
         if entrypoint is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Entrypoint {entrypoint_name} is not allowed"
+                detail=f"Entrypoint {entrypoint_name} is not allowed",
             )
         # Create operation with contract/entrypoint
-        db_operation = crud.create_operation(db, schemas.CreateOperation(contract_id=str(contract.id), entrypoint_id=str(entrypoint.id)))
+        db_operation = crud.create_operation(
+            db,
+            schemas.CreateOperation(
+                contract_id=str(contract.id), entrypoint_id=str(entrypoint.id)
+            ),
+        )
         operation_ids.append(db_operation.id)
 
-    op = ptz.bulk(*[
-        ptz.transaction(
-            source=ptz.key.public_key_hash(),
-            parameters=operation["parameters"],
-            destination=operation["destination"],
-            amount=0
-        )
-        for operation in call_data.operations
-    ]) # type: ignore
+    op = ptz.bulk(
+        *[
+            ptz.transaction(
+                source=ptz.key.public_key_hash(),
+                parameters=operation["parameters"],
+                destination=operation["destination"],
+                amount=0,
+            )
+            for operation in call_data.operations
+        ] # type: ignore
+    )
     # TODO: log the result
 
     try:
@@ -147,28 +169,40 @@ async def post_operation(call_data: schemas.CallData, db: Session = Depends(data
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Operation is invalid"
-            )
+            detail=f"Operation is invalid",
+        )
 
     for op_id in operation_ids:
-        crud.update_operation(db, op_id, result["transaction_hash"], status="ok" if result['result'] == 'ok' else 'failed')
+        crud.update_operation(
+            db,
+            op_id,
+            result["transaction_hash"],
+            status="ok" if result["result"] == "ok" else "failed",
+        )
 
     if result["result"] == "failing":
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Operation is invalid"
+            detail=f"Operation is invalid",
         )
     return result
 
 
 # Credits
 @router.put("/credits", response_model=schemas.Credit)
-async def update_credits(credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)):
-    credits = crud.update_credits(db, credits.amount, credits.contract_address)
-    if (credits is None):
+async def update_credits(
+    credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
+):
+    try:
+        return crud.update_credits(db, credits.amount, credits.contract_address)
+    except ContractNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Contrat or credit not found."
-            )
-    return credits
+            detail=f"Contrat not found.",
+        )
+    except CreditNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Credit not found.",
+        )
