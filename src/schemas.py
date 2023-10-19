@@ -31,14 +31,16 @@ class EntrypointUpdate(BaseModel):
   is_enabled: bool
 
 # Credits
-class CreditUpdate(BaseModel):
-  contract_address: str
-  amount: int
-
 class Credit(BaseModel):
   id: UUID4
   amount: int
   owner_id: UUID4
+
+class CreditCreation(BaseModel):
+  owner_id: UUID4
+
+class CreditUpdate(Credit):
+    operation_hash: str
 
 # Contracts
 class ContractBase(BaseModel):
@@ -49,7 +51,7 @@ class Contract(ContractBase):
   id: UUID4
   name: str
   entrypoints: List[Entrypoint]
-  credit: Credit | None
+  credit: Credit | None  # FIXME: shouldn't be None
 
 class ContractCreation(ContractBase):
   name: str
