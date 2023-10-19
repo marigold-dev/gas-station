@@ -20,9 +20,9 @@ def config(filename='sql/database.ini', section='postgresql'):
 
 try:
     params = config()
-    print(params)
+    url = f"postgresql://{params['user']}:{params['password']}@{params['host']}:5432/{params['database']}"
     engine = create_engine(
-        url=params['url']
+        url=url
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
