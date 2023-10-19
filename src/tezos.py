@@ -1,16 +1,17 @@
 from collections import OrderedDict
 import asyncio
+from typing import Union
 
 from src import database
 # from .pytezos import ptz, pytezos
 from . import crud
 from .schemas import CreditUpdate
 from pytezos.rpc.errors import MichelsonError
-from pytezos import PyTezosClient
 import pytezos
 from sqlalchemy.orm import Session
 
 from . import config
+from src import schemas
 
 # Config stuff for pytezos
 assert config.SECRET_KEY is not None and len(config.SECRET_KEY) > 0, \
@@ -60,7 +61,7 @@ def find_fees(global_tx, payer_key):
     return fees
 
 
-async def confirm_amount(tx_hash, payer, amount: int | str):
+async def confirm_amount(tx_hash, payer, amount: Union[int,str]):
     receiver = ptz.key.public_key_hash()
     op_result = await find_transaction(tx_hash)
     return any(
@@ -103,7 +104,7 @@ class TezosManager:
         # TODO group requests
         try:
             for fee, contract in fees:
-                crud.update_credits(db,
+                crud.update_credits_from_contract_address(db,
                                     amount=int(fee["change"]),
                                     address=contract)
                 crud.update_amount_operation(db,

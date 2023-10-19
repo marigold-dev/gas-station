@@ -12,10 +12,10 @@ def get_user(db: Session, uuid: UUID4):
     """
     Return a models.User or raise UserNotFound exception
     """
-    try:
-        return db.query(models.User).get(uuid)
-    except NoResultFound as e:
-        raise UserNotFound() from e
+    db_user: Optional[models.User] = db.query(models.User).get(uuid)
+    if (db_user is None):
+        raise UserNotFound()
+    return db_user
 
 
 def get_user_by_address(db: Session, address: str):
@@ -173,11 +173,22 @@ def update_credits(db: Session, credit_update: schemas.CreditUpdate):
     """
     try:
         amount = credit_update.amount
-        db_credit: models.Credit | None = db.query(models.Credit).get(credit_update.id)
+        db_credit: Optional[models.Credit] = db.query(models.Credit).get(credit_update.id)
         if db_credit is None:
             raise CreditNotFound()
         db.query(models.Credit).filter(models.Credit.id == credit_update.id).update({'amount': db_credit.amount + amount})
         db.commit()
         return db_credit
+    except NoResultFound as e:
+        raise CreditNotFound() from e
+
+def update_credits_from_contract_address(db: Session, amount: int, address: str):
+    try:
+        db_contract: Optional[models.Credit] = db.query(models.Contract).filter(models.Contract.address == address).one_or_none()
+        if db_contract is None:
+            raise ContractNotFound()
+        db.query(models.Credit).filter(models.Credit.id == db_contract.credit_id).update({'amount': db_contract.credit.amount + amount})
+        db.commit()
+        return db_contract.credit
     except NoResultFound as e:
         raise CreditNotFound() from e
