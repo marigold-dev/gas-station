@@ -6,3 +6,4 @@ python-jose[cryptography]
 python-dotenv
 pydantic
 sqlalchemy
+psycopg2
