@@ -141,7 +141,6 @@ def update_amount_operation(db: Session, hash: str, amount: int):
     ).update({'cost': amount})
     db.commit()
 
-def update_credits(db: Session, amount: int, address: str):
 
 def get_user_credits(db: Session, user_id: str):
     """
@@ -167,20 +166,16 @@ def create_credits(db: Session, credit: schemas.CreditCreation):
         raise UserNotFound() from e
 
 
+def update_credits(db: Session, credit_update: schemas.CreditUpdate):
     """
     Update a credit row and return a models.Credit. \n
     Can raise a ContractNotFound exception or CreditNotFound exception.
     """
     try:
-        db_contract = get_contract(db, address)
-        credit_query = db.query(models.Credit).filter(models.Credit.owner_id == db_contract.owner_id)
-        try:
-            db_credit = credit_query.one()
-            credit_query.update({'amount': db_credit.amount + amount})
-            db.commit()
-            return credit_query.one()
-        except NoResultFound as e:
-            raise CreditNotFound() from e
-    except ContractNotFound as e:
-        pass
-
+        amount = credit_update.amount
+        db_credit = db.query(models.Credit).get(credit_update.id)
+        db_credit.update({'amount': db_credit.amount + amount})
+        db.commit()
+        return db_credit
+    except NoResultFound as e:
+        raise CreditNotFound() from e

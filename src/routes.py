@@ -5,7 +5,7 @@ import src.crud as crud
 import src.schemas as schemas
 
 from sqlalchemy.orm import Session
-from .tezos import tezos_manager, ptz
+from .tezos import tezos_manager, ptz, confirm_amount
 from pytezos.rpc.errors import MichelsonError
 from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 
@@ -159,6 +159,7 @@ async def post_operation(
         )
         operation_ids.append(db_operation.id)
 
+    # FIXME move to tezos module
     op = ptz.bulk(
         *[
             ptz.transaction(
@@ -168,7 +169,7 @@ async def post_operation(
                 amount=0,
             )
             for operation in call_data.operations
-        ] # type: ignore
+        ]  # type: ignore
     )
     # TODO: log the result
 
@@ -203,12 +204,22 @@ async def post_operation(
 
 
 # Credits
+# TODO handle negative amount (withdraw)
 @router.put("/credits", response_model=schemas.Credit)
 async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.update_credits(db, credits.amount, credits.contract_address)
+        payer_address = crud.get_user(db, credits.owner_id)
+        op_hash = credits.operation_hash
+        amount = credits.amount
+        is_confirmed = confirm_amount(op_hash, payer_address, amount)
+        if not is_confirmed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Could not find confirmation for {amount} with {op_hash}"
+            )
+        return crud.update_credits(db, amount, credits.contract_address)
     except ContractNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
