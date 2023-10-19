@@ -37,7 +37,9 @@ async def get_user(user_address: str, db: Session = Depends(database.get_db)):
 async def create_user(
     user: schemas.UserCreation, db: Session = Depends(database.get_db)
 ):
-    return crud.create_user(db, user)
+    user = crud.create_user(db, user)
+    crud.create_credits(db, schemas.CreditCreation(owner_id = user.id))
+    return user
 
 
 # Contracts
@@ -48,6 +50,17 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
     except UserNotFound as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
+        )
+
+
+@router.get("/contracts/credit/{credit_id}",
+            response_model=list[schemas.Contract])
+async def get_user_contracts(credit_id: str, db: Session = Depends(database.get_db)):
+    try:
+        return crud.get_contracts_by_credit(db, credit_id)
+    except CreditNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Credit not found."
         )
 
 

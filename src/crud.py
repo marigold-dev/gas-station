@@ -17,6 +17,18 @@ def get_user(db: Session, uuid: UUID4):
     except NoResultFound as e:
         raise UserNotFound() from e
 
+
+def get_user_by_address(db: Session, address: str):
+    """
+    Return a models.User or raise UserNotFound exception
+    """
+    try:
+        return db.query(models.User).filter(
+            models.User.address == address).one()
+    except NoResultFound as e:
+        raise UserNotFound() from e
+
+
 def create_user(db: Session, user: schemas.UserCreation):
     db_user = models.User(**user.model_dump())
     db.add(db_user)
@@ -31,6 +43,14 @@ def get_contracts_by_user(db: Session, user_address: str):
     """
     user = get_user_by_address(db, user_address)
     return user.contracts
+
+
+def get_contracts_by_credit(db: Session, credit_id: str):
+    """
+    Return a list of models.Contracts or raise UserNotFound exception
+    """
+    return db.query(models.Contract).filter(
+        models.Contract.credit_id == credit_id).fetchall()
 
 
 def get_contract(db: Session, address: str):
@@ -122,6 +142,31 @@ def update_amount_operation(db: Session, hash: str, amount: int):
     db.commit()
 
 def update_credits(db: Session, amount: int, address: str):
+
+def get_user_credits(db: Session, user_id: str):
+    """
+    TODO
+    """
+    user = get_user(db, user_id)
+    return user.credits
+
+
+def create_credits(db: Session, credit: schemas.CreditCreation):
+    """
+    Creates credits for a given owner and returns a models.Credit.
+    """
+    try:
+        # Check if the user exists
+        _ = db.query(models.User).get(credit.owner_id)
+        credit = models.Credit(**credit.model_dump())
+        db.add(credit)
+        db.commit()
+        # db.refresh(credit)
+        return credit
+    except NoResultFound as e:
+        raise UserNotFound() from e
+
+
     """
     Update a credit row and return a models.Credit. \n
     Can raise a ContractNotFound exception or CreditNotFound exception.
