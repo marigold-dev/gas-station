@@ -3,9 +3,10 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 import src.crud as crud
 import src.schemas as schemas
+import uuid
 
 from sqlalchemy.orm import Session
-from .tezos import tezos_manager, ptz
+from .tezos import tezos_manager, ptz, confirm_amount
 from pytezos.rpc.errors import MichelsonError
 from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 
@@ -25,7 +26,7 @@ async def root():
 @router.get("/users/{user_address}", response_model=schemas.User)
 async def get_user(user_address: str, db: Session = Depends(database.get_db)):
     try:
-        return crud.get_user(db, user_address)
+        return crud.get_user_by_address(db, user_address)
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -37,7 +38,9 @@ async def get_user(user_address: str, db: Session = Depends(database.get_db)):
 async def create_user(
     user: schemas.UserCreation, db: Session = Depends(database.get_db)
 ):
-    return crud.create_user(db, user)
+    user = crud.create_user(db, user)
+    crud.create_credits(db, schemas.CreditCreation(owner_id = user.id))
+    return user
 
 
 # Contracts
@@ -48,6 +51,17 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
     except UserNotFound as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
+        )
+
+
+@router.get("/contracts/credit/{credit_id}",
+            response_model=list[schemas.Contract])
+async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
+    try:
+        return crud.get_contracts_by_credit(db, credit_id)
+    except CreditNotFound as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Credit not found."
         )
 
 
@@ -146,6 +160,7 @@ async def post_operation(
         )
         operation_ids.append(db_operation.id)
 
+    # FIXME move to tezos module
     op = ptz.bulk(
         *[
             ptz.transaction(
@@ -155,7 +170,7 @@ async def post_operation(
                 amount=0,
             )
             for operation in call_data.operations
-        ] # type: ignore
+        ]  # type: ignore
     )
     # TODO: log the result
 
@@ -190,12 +205,22 @@ async def post_operation(
 
 
 # Credits
+# TODO handle negative amount (withdraw)
 @router.put("/credits", response_model=schemas.Credit)
 async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.update_credits(db, credits.amount, credits.contract_address)
+        payer_address = crud.get_user(db, credits.owner_id).address
+        op_hash = credits.operation_hash
+        amount = credits.amount
+        is_confirmed = await confirm_amount(op_hash, payer_address, amount)
+        if not is_confirmed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Could not find confirmation for {amount} with {op_hash}"
+            )
+        return crud.update_credits(db, credits)
     except ContractNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -205,4 +230,17 @@ async def update_credits(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Credit not found.",
+        )
+
+
+@router.get("/credits/{user_id}", response_model=list[schemas.Credit])
+async def credits_for_user(
+    user_id: str, db: Session = Depends(database.get_db)
+):
+    try:
+        return crud.get_user(db, user_id).credits
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found.",
         )

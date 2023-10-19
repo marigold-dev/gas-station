@@ -1,13 +1,12 @@
 from collections import OrderedDict
 import asyncio
 
-from fastapi import Depends
-
 from src import database
 # from .pytezos import ptz, pytezos
 from . import crud
 from .schemas import CreditUpdate
 from pytezos.rpc.errors import MichelsonError
+from pytezos import PyTezosClient
 import pytezos
 from sqlalchemy.orm import Session
 
@@ -21,7 +20,24 @@ admin_key = pytezos.pytezos.key.from_encoded_key(
     config.SECRET_KEY
 )
 ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
+print(f"INFO: API address is {ptz.key.public_key_hash()}")
+constants = ptz.shell.block.context.constants()
 
+
+async def find_transaction(tx_hash):
+    block_time = int(constants["minimal_block_delay"])
+    nb_try = 0
+    while nb_try < 4:
+        try:
+            op_result = ptz.shell.blocks[-10:].find_operation(tx_hash)
+            break
+        except Exception:
+            nb_try += 1
+            await asyncio.sleep(block_time)
+    else:
+        raise Exception(f"Couldn't find operation {tx_hash}")
+
+    return op_result
 
 
 def find_fees(global_tx, payer_key):
@@ -33,7 +49,9 @@ def find_fees(global_tx, payer_key):
         (z, x["destination"])
         for x in op_result
         for y in (
-            x["metadata"].get("operation_result", {}).get("balance_updates", {}),
+            x["metadata"].get(
+                "operation_result", {}
+            ).get("balance_updates", {}),
             x["metadata"].get("balance_updates", {}),
         )
         for z in y
@@ -42,12 +60,23 @@ def find_fees(global_tx, payer_key):
     return fees
 
 
+async def confirm_amount(tx_hash, payer, amount: int | str):
+    receiver = ptz.key.public_key_hash()
+    op_result = await find_transaction(tx_hash)
+    return any(
+        op for op in op_result["contents"]
+        if op["kind"] == "transaction"
+        and op["source"] == payer
+        and op["destination"] == receiver
+        and int(op["amount"]) == int(amount)
+    )
+
+
 class TezosManager:
     def __init__(self, ptz):
         self.ops_queue = OrderedDict()
         self.results = dict()  # TODO: find inspiration
         self.ptz = ptz
-        constants = self.ptz.shell.block.context.constants()
         self.block_time = int(constants["minimal_block_delay"])
 
     # Receive an operation from sender and add it to the waiting queue;
@@ -68,24 +97,18 @@ class TezosManager:
         }
 
     async def update_fees(self, posted_tx):
-        # Use session directly because we can't use Depends outside a FastAPI router (I think...)
         db = database.SessionLocal()
-        nb_try = 0
-        while nb_try < 4:
-            try:
-                op_result = ptz.shell.blocks[-10:].find_operation(posted_tx.hash())
-                break
-            except Exception as _e:
-                nb_try += 1
-                await asyncio.sleep(self.block_time)
-        else:
-            raise Exception(f"Couldn't find operation {posted_tx.hash()}")
+        op_result = await find_transaction(posted_tx.hash())
         fees = find_fees(op_result, ptz.key.public_key_hash())
         # TODO group requests
         try:
             for fee, contract in fees:
-                crud.update_credits(db, amount=int(fee["change"]), address=contract)
-                crud.update_amount_operation(db, op_result["hash"], int(fee["change"]))
+                crud.update_credits(db,
+                                    amount=int(fee["change"]),
+                                    address=contract)
+                crud.update_amount_operation(db,
+                                             op_result["hash"],
+                                             int(fee["change"]))
         finally:
             db.close()
 
@@ -115,7 +138,6 @@ class TezosManager:
                 # Post all the correct operations together and get the
                 # result from the RPC to know what the real fees were
                 posted_tx = ptz.bulk(*acceptable_operations.values()).send()
-                customer_addr = ""
                 for i, k in enumerate(acceptable_operations):
                     assert self.results[k] != "failing"
                     self.results[k] = {"transaction": posted_tx}
