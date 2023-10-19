@@ -50,7 +50,7 @@ def get_contracts_by_credit(db: Session, credit_id: str):
     Return a list of models.Contracts or raise UserNotFound exception
     """
     return db.query(models.Contract).filter(
-        models.Contract.credit_id == credit_id).fetchall()
+        models.Contract.credit_id == credit_id).all()
 
 
 def get_contract(db: Session, address: str):
@@ -144,10 +144,10 @@ def update_amount_operation(db: Session, hash: str, amount: int):
 
 def get_user_credits(db: Session, user_id: str):
     """
-    TODO
+    Get credits from a user.
     """
-    user = get_user(db, user_id)
-    return user.credits
+    db_credits = db.query(models.Credit).filter(models.Credit.owner_id == user_id).all()
+    return db_credits
 
 
 def create_credits(db: Session, credit: schemas.CreditCreation):
@@ -173,8 +173,10 @@ def update_credits(db: Session, credit_update: schemas.CreditUpdate):
     """
     try:
         amount = credit_update.amount
-        db_credit = db.query(models.Credit).get(credit_update.id)
-        db_credit.update({'amount': db_credit.amount + amount})
+        db_credit: models.Credit | None = db.query(models.Credit).get(credit_update.id)
+        if db_credit is None:
+            raise CreditNotFound()
+        db.query(models.Credit).filter(models.Credit.id == credit_update.id).update({'amount': db_credit.amount + amount})
         db.commit()
         return db_credit
     except NoResultFound as e:

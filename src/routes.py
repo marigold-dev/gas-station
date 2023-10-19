@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 import src.crud as crud
 import src.schemas as schemas
+import uuid
 
 from sqlalchemy.orm import Session
 from .tezos import tezos_manager, ptz, confirm_amount
@@ -25,7 +26,7 @@ async def root():
 @router.get("/users/{user_address}", response_model=schemas.User)
 async def get_user(user_address: str, db: Session = Depends(database.get_db)):
     try:
-        return crud.get_user(db, user_address)
+        return crud.get_user_by_address(db, user_address)
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -55,7 +56,7 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
 
 @router.get("/contracts/credit/{credit_id}",
             response_model=list[schemas.Contract])
-async def get_user_contracts(credit_id: str, db: Session = Depends(database.get_db)):
+async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_credit(db, credit_id)
     except CreditNotFound as e:
@@ -219,7 +220,7 @@ async def update_credits(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Could not find confirmation for {amount} with {op_hash}"
             )
-        return crud.update_credits(db, amount, credits.contract_address)
+        return crud.update_credits(db, credits)
     except ContractNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -230,3 +231,9 @@ async def update_credits(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Credit not found.",
         )
+
+
+@router.get("/credits/{user_id}", response_model=list[schemas.Credit])
+async def get_credits_by_user(user_id: str,  db: Session = Depends(database.get_db)):
+    credits = crud.get_user_credits(db, user_id)
+    return credits
