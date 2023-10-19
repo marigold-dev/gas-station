@@ -211,10 +211,10 @@ async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
     try:
-        payer_address = crud.get_user(db, credits.owner_id)
+        payer_address = crud.get_user(db, credits.owner_id).address
         op_hash = credits.operation_hash
         amount = credits.amount
-        is_confirmed = confirm_amount(op_hash, payer_address, amount)
+        is_confirmed = await confirm_amount(op_hash, payer_address, amount)
         if not is_confirmed:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -234,6 +234,13 @@ async def update_credits(
 
 
 @router.get("/credits/{user_id}", response_model=list[schemas.Credit])
-async def get_credits_by_user(user_id: str,  db: Session = Depends(database.get_db)):
-    credits = crud.get_user_credits(db, user_id)
-    return credits
+async def credits_for_user(
+    user_id: str, db: Session = Depends(database.get_db)
+):
+    try:
+        return crud.get_user(db, user_id).credits
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found.",
+        )

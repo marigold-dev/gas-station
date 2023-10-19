@@ -51,12 +51,12 @@ class Contract(ContractBase):
   id: UUID4
   name: str
   entrypoints: List[Entrypoint]
-  credit: Credit | None  # FIXME: shouldn't be None
+  credit: Credit
 
 class ContractCreation(ContractBase):
   name: str
   entrypoints: List[EntrypointCreation]
-
+  credit_id: UUID4
 
 # Operations
 # TODO: right now the sender isn't checked, as we use permits anyway

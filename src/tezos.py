@@ -20,9 +20,12 @@ admin_key = pytezos.pytezos.key.from_encoded_key(
     config.SECRET_KEY
 )
 ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
+print(f"INFO: API address is {ptz.key.public_key_hash()}")
+constants = ptz.shell.block.context.constants()
 
 
-async def find_transaction(tx_hash, block_time):
+async def find_transaction(tx_hash):
+    block_time = int(constants["minimal_block_delay"])
     nb_try = 0
     while nb_try < 4:
         try:
@@ -57,15 +60,15 @@ def find_fees(global_tx, payer_key):
     return fees
 
 
-def confirm_amount(tx_hash, payer, amount: int | str):
+async def confirm_amount(tx_hash, payer, amount: int | str):
     receiver = ptz.key.public_key_hash()
-    op_result = find_transaction(tx_hash)
+    op_result = await find_transaction(tx_hash)
     return any(
         op for op in op_result["contents"]
         if op["kind"] == "transaction"
         and op["source"] == payer
         and op["destination"] == receiver
-        and int(op["amount"]) == amount
+        and int(op["amount"]) == int(amount)
     )
 
 
@@ -74,7 +77,6 @@ class TezosManager:
         self.ops_queue = OrderedDict()
         self.results = dict()  # TODO: find inspiration
         self.ptz = ptz
-        constants = self.ptz.shell.block.context.constants()
         self.block_time = int(constants["minimal_block_delay"])
 
     # Receive an operation from sender and add it to the waiting queue;
