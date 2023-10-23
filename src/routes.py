@@ -22,7 +22,61 @@ async def root():
     return {"message": "Hello World"}
 
 
-# Users
+# POST endpoints
+@router.post("/users", response_model=schemas.User)
+async def create_user(
+    user: schemas.UserCreation, db: Session = Depends(database.get_db)
+):
+    user = crud.create_user(db, user)
+    crud.create_credits(db, schemas.CreditCreation(owner_id = user.id))
+    return user
+
+
+@router.post("/contracts", response_model=schemas.Contract)
+async def create_contract(
+    contract: schemas.ContractCreation, db: Session = Depends(database.get_db)
+):
+    return crud.create_contract(db, contract)
+
+
+# PUT endpoints
+@router.put("/entrypoints", response_model=list[schemas.Entrypoint])
+async def update_entrypoints(
+    entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)
+):
+    return crud.update_entrypoints(db, entrypoints)
+
+
+@router.put("/deposit", response_model=schemas.Credit)
+async def update_credits(
+    credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
+):
+    try:
+        payer_address = crud.get_user(db, credits.owner_id).address
+        op_hash = credits.operation_hash
+        amount = credits.amount
+        is_confirmed = await tezos.confirm_amount(op_hash,
+                                                  payer_address,
+                                                  amount)
+        if not is_confirmed:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Could not find confirmation for {amount} with {op_hash}"
+            )
+        return crud.update_credits(db, credits)
+    except ContractNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Contrat not found.",
+        )
+    except CreditNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Credit not found.",
+        )
+
+
+# Users and credits getters
 @router.get("/users/{user_address}", response_model=schemas.User)
 async def get_user(user_address: str, db: Session = Depends(database.get_db)):
     try:
@@ -34,13 +88,17 @@ async def get_user(user_address: str, db: Session = Depends(database.get_db)):
         )
 
 
-@router.post("/users", response_model=schemas.User)
-async def create_user(
-    user: schemas.UserCreation, db: Session = Depends(database.get_db)
+@router.get("/credits/{user_id}", response_model=list[schemas.Credit])
+async def credits_for_user(
+    user_id: str, db: Session = Depends(database.get_db)
 ):
-    user = crud.create_user(db, user)
-    crud.create_credits(db, schemas.CreditCreation(owner_id = user.id))
-    return user
+    try:
+        return crud.get_user(db, user_id).credits
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found.",
+        )
 
 
 # Contracts
@@ -75,13 +133,6 @@ async def get_contract(address: str, db: Session = Depends(database.get_db)):
     return contract
 
 
-@router.post("/contracts", response_model=schemas.Contract)
-async def create_contract(
-    contract: schemas.ContractCreation, db: Session = Depends(database.get_db)
-):
-    return crud.create_contract(db, contract)
-
-
 # Entrypoints
 @router.get("/entrypoints/{contract_address}", response_model=list[schemas.Entrypoint])
 async def get_entrypoints(
@@ -106,13 +157,6 @@ async def get_entrypoint(
         )
 
 
-@router.put("/entrypoints", response_model=list[schemas.Entrypoint])
-async def update_entrypoints(
-    entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)
-):
-    return crud.update_entrypoints(db, entrypoints)
-
-
 # Operations
 @router.post("/operation")
 async def post_operation(
@@ -133,17 +177,21 @@ async def post_operation(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Target {contract_address} is not allowed",
             )
-        contract = crud.get_contract(db, contract_address)
-        if contract is None:
+        try:
+            contract = crud.get_contract(db, contract_address)
+        except ContractNotFound:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Target {contract_address} is not allowed",
             )
 
         entrypoint_name = operation["parameters"]["entrypoint"]
-        entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
-
-        if entrypoint is None:
+        print(contract_address, entrypoint_name)
+        try:
+            entrypoint = crud.get_entrypoint(db,
+                                             str(contract.address),
+                                             entrypoint_name)
+        except EntrypointNotFound:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Entrypoint {entrypoint_name} is not allowed",
@@ -182,46 +230,4 @@ async def post_operation(
             # FIXME? Is this the best one?
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unknown exception raised.",
-        )
-
-
-# Credits
-# TODO handle negative amount (withdraw)
-@router.put("/credits", response_model=schemas.Credit)
-async def update_credits(
-    credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
-):
-    try:
-        payer_address = crud.get_user(db, credits.owner_id).address
-        op_hash = credits.operation_hash
-        amount = credits.amount
-        is_confirmed = await confirm_amount(op_hash, payer_address, amount)
-        if not is_confirmed:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Could not find confirmation for {amount} with {op_hash}"
-            )
-        return crud.update_credits(db, credits)
-    except ContractNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Contrat not found.",
-        )
-    except CreditNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Credit not found.",
-        )
-
-
-@router.get("/credits/{user_id}", response_model=list[schemas.Credit])
-async def credits_for_user(
-    user_id: str, db: Session = Depends(database.get_db)
-):
-    try:
-        return crud.get_user(db, user_id).credits
-    except UserNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
         )
