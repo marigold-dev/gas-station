@@ -73,6 +73,21 @@ async def confirm_amount(tx_hash, payer, amount: Union[int,str]):
     )
 
 
+def simulate_transaction(operations):
+    op = ptz.bulk(
+        *[
+            ptz.transaction(
+                source=ptz.key.public_key_hash(),
+                parameters=operation["parameters"],
+                destination=operation["destination"],
+                amount=0,
+            )
+            for operation in operations
+        ]  # type: ignore
+    )
+    return op.autofill()
+
+
 class TezosManager:
     def __init__(self, ptz):
         self.ops_queue = OrderedDict()
