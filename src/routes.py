@@ -6,7 +6,7 @@ import src.schemas as schemas
 import uuid
 
 from sqlalchemy.orm import Session
-from .tezos import tezos_manager, ptz, confirm_amount
+from . import tezos
 from pytezos.rpc.errors import MichelsonError
 from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 
@@ -197,26 +197,12 @@ async def post_operation(
                 detail=f"Entrypoint {entrypoint_name} is not allowed",
             )
 
-    # FIXME move to tezos module
-    op = ptz.bulk(
-        *[
-            ptz.transaction(
-                source=ptz.key.public_key_hash(),
-                parameters=operation["parameters"],
-                destination=operation["destination"],
-                amount=0,
-            )
-            for operation in call_data.operations
-        ]  # type: ignore
-    )
-    # TODO: log the result
-
     try:
         # Simulate the operation alone without sending it
-        op.autofill()
-        db.close()
-        result = await tezos_manager.queue_operation(call_data.sender, op)
-        return result
+        # TODO: log the result
+        op = tezos.simulate_transaction(call_data.operations)
+        result = await tezos.tezos_manager.queue_operation(call_data.sender,
+                                                           op)
     except MichelsonError as e:
         print("Received failing operation, discarding")
         print(e)
@@ -231,3 +217,4 @@ async def post_operation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Unknown exception raised.",
         )
+    return result
