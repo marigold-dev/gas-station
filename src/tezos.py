@@ -79,18 +79,22 @@ class TezosManager:
         self.results = dict()  # TODO: find inspiration
         self.ptz = ptz
         self.block_time = int(constants["minimal_block_delay"])
+        self.nb_retry = 0
 
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
     async def queue_operation(self, sender, operation):
         self.results[sender] = "waiting"
         self.ops_queue[sender] = operation
-        while self.results[sender] == "waiting":
+        while self.results[sender] == "waiting" or self.nb_retry <= 5:
             # TODO wait the right amount of time
             await asyncio.sleep(1)
+            self.nb_retry += 1
 
         if self.results[sender] == "waiting":
             raise Exception()
+
+        self.nb_retry = 0
 
         return {
             "result": "ok",
@@ -111,40 +115,47 @@ class TezosManager:
                                              op_result["hash"],
                                              int(fee["change"]))
         finally:
+            print('---close update_fees')
             db.close()
 
     async def main_loop(self):
         while True:
-            await asyncio.sleep(self.block_time)
-            # TODO make sure we are in a new block, otherwise continue
-            # TODO catch errors
+            try:
+                await asyncio.sleep(self.block_time)
+                # TODO make sure we are in a new block, otherwise continue
+                # TODO catch errors
 
-            n_ops = len(self.ops_queue)
-            print(f"found {n_ops} operations to send")
-            acceptable_operations = OrderedDict()
-            for sender in self.ops_queue:
-                op = self.ops_queue[sender]
-                acceptable_operations[sender] = op
-                try:
-                    ptz.bulk(*acceptable_operations.values()).autofill()
-                except MichelsonError:
-                    # The last operation conflicts with some of the others;
-                    # we refuse it
-                    acceptable_operations.pop(sender)
-                    self.results[sender] = "failing"
+                n_ops = len(self.ops_queue)
+                print(f"found {n_ops} operations to send")
+                acceptable_operations = OrderedDict()
+                for sender in self.ops_queue:
+                    op = self.ops_queue[sender]
+                    acceptable_operations[sender] = op
+                    try:
+                        ptz.bulk(*acceptable_operations.values()).autofill()
+                    except MichelsonError:
+                        # The last operation conflicts with some of the others;
+                        # we refuse it
+                        acceptable_operations.pop(sender)
+                        self.results[sender] = "failing"
 
-            n_ops = len(acceptable_operations)
-            print(f"found {n_ops} valid operations to send")
-            if n_ops > 0:
-                # Post all the correct operations together and get the
-                # result from the RPC to know what the real fees were
-                posted_tx = ptz.bulk(*acceptable_operations.values()).send()
-                for i, k in enumerate(acceptable_operations):
-                    assert self.results[k] != "failing"
-                    self.results[k] = {"transaction": posted_tx}
-                asyncio.create_task(self.update_fees(posted_tx))
-            self.ops_queue = dict()
-            print("Tezos loop executed")
+                n_ops = len(acceptable_operations)
+                print(f"found {n_ops} valid operations to send")
+                if n_ops > 0:
+                    # Post all the correct operations together and get the
+                    # result from the RPC to know what the real fees were
+                    posted_tx = ptz.bulk(*acceptable_operations.values()).send()
+                    for i, k in enumerate(acceptable_operations):
+                        assert self.results[k] != "failing"
+                        self.results[k] = {"transaction": posted_tx}
+                    asyncio.create_task(self.update_fees(posted_tx))
+                self.ops_queue = dict()
+                print("Tezos loop executed")
+            except Exception:
+                pass
+            finally:
+                print(database.engine.pool.status())
+
 
 
 tezos_manager = TezosManager(ptz)

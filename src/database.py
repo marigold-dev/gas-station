@@ -22,9 +22,9 @@ try:
     params = config()
     url = f"postgresql://{params['user']}:{params['password']}@{params['host']}:5432/{params['database']}"
     engine = create_engine(
-        url=url
+        url=url,
     )
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, bind=engine)
     Base = declarative_base()
 except (Exception) as e:
     print(e)
@@ -36,4 +36,5 @@ def get_db():
         try:
             yield db
         finally:
+            print('--- close')
             db.close()

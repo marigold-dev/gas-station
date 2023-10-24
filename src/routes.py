@@ -152,13 +152,13 @@ async def post_operation(
                 detail=f"Entrypoint {entrypoint_name} is not allowed",
             )
         # Create operation with contract/entrypoint
-        db_operation = crud.create_operation(
-            db,
-            schemas.CreateOperation(
-                contract_id=str(contract.id), entrypoint_id=str(entrypoint.id)
-            ),
-        )
-        operation_ids.append(db_operation.id)
+        # db_operation = crud.create_operation(
+        #     db,
+        #     schemas.CreateOperation(
+        #         contract_id=str(contract.id), entrypoint_id=str(entrypoint.id)
+        #     ),
+        # )
+        # operation_ids.append(db_operation.id)
 
     # FIXME move to tezos module
     op = ptz.bulk(
@@ -178,6 +178,7 @@ async def post_operation(
         # Simulate the operation alone without sending it
         op.autofill()
         result = await tezos_manager.queue_operation(call_data.sender, op)
+        return result
     except MichelsonError as e:
         print("Received failing operation, discarding")
         print(e)
@@ -186,22 +187,28 @@ async def post_operation(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"Operation is invalid",
         )
-
-    for op_id in operation_ids:
-        crud.update_operation(
-            db,
-            op_id,
-            result["transaction_hash"],
-            status="ok" if result["result"] == "ok" else "failed",
-        )
-
-    if result["result"] == "failing":
+    except Exception:
+        print("------- EXCEPTION OPERATION QUEUE")
         raise HTTPException(
             # FIXME? Is this the best one?
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Operation is invalid",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"EXCEPTION OPERATION QUEUE",
         )
-    return result
+
+    # for op_id in operation_ids:
+    #     crud.update_operation(
+    #         db,
+    #         op_id,
+    #         result["transaction_hash"],
+    #         status="ok" if result["result"] == "ok" else "failed",
+    #     )
+
+    # if result["result"] == "failing":
+    #     raise HTTPException(
+    #         # FIXME? Is this the best one?
+    #         status_code=status.HTTP_409_CONFLICT,
+    #         detail=f"Operation is invalid",
+    #     )
 
 
 # Credits
