@@ -33,7 +33,6 @@ class Contract(Base):
 
   owner = relationship("User", back_populates="contracts")
   entrypoints = relationship("Entrypoint", back_populates="contract")
-  operations = relationship("Operation", back_populates='contract')
   credit = relationship("Credit", back_populates='contracts')
 
 
@@ -56,7 +55,6 @@ class Entrypoint(Base):
   contract_id = Column(UUID(as_uuid=True), ForeignKey('contracts.id'))
 
   contract = relationship("Contract", back_populates='entrypoints')
-  operations = relationship("Operation", back_populates='entrypoint')
 
 
 # ------- CREDITS ------- #

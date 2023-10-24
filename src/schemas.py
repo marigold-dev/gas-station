@@ -64,6 +64,3 @@ class CallData(BaseModel):
     sender: str
     operations: list[dict[str, Any]]
 
-class CreateOperation(BaseModel):
-  contract_id: str
-  entrypoint_id: str
