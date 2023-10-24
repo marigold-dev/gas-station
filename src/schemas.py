@@ -39,8 +39,29 @@ class Credit(BaseModel):
 class CreditCreation(BaseModel):
   owner_id: UUID4
 
-class CreditUpdate(Credit):
+
+class CreditUpdate(BaseModel):
+    id: UUID4
+    amount: int
     operation_hash: str
+
+
+class CreditWithdraw(BaseModel):
+    id: UUID4
+    amount: int
+    micheline_signature: str
+
+    def to_micheline_pair(self):
+        return [
+            {"string": self.id},
+            {"int": self.amount}
+        ]
+
+
+class WithdrawResponse(BaseModel):
+    id: UUID4
+    operation_hash: str
+
 
 # Contracts
 class ContractBase(BaseModel):
