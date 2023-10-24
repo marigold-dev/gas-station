@@ -156,6 +156,7 @@ def update_credits(db: Session, credit_update: schemas.CreditUpdate):
     except NoResultFound as e:
         raise CreditNotFound() from e
 
+
 def update_credits_from_contract_address(db: Session, amount: int, address: str):
     try:
         db_contract: Optional[models.Credit] = db.query(models.Contract).filter(models.Contract.address == address).one_or_none()
@@ -166,3 +167,21 @@ def update_credits_from_contract_address(db: Session, amount: int, address: str)
         return db_contract.credit
     except NoResultFound as e:
         raise CreditNotFound() from e
+
+
+def get_credits_from_contract_address(db: Session, contract_address: str):
+    try:
+        db_contract = db.query(models.Contract).filter(
+            models.Contract.address == contract_address
+        ).one_or_none()
+        if db_contract is None:
+            raise ContractNotFound()
+        print(db_contract)
+        db_credit = db.query(models.Credit).filter(
+            models.Credit.id == db_contract.credit_id
+        ).one_or_none()
+        if db_credit is None:
+            raise CreditNotFound()
+        return db_credit
+    except NoResultFound as e:
+        raise ContractNotFound() from e

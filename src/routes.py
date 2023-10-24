@@ -55,9 +55,9 @@ async def update_credits(
         payer_address = crud.get_user(db, credits.owner_id).address
         op_hash = credits.operation_hash
         amount = credits.amount
-        is_confirmed = await tezos.confirm_amount(op_hash,
-                                                  payer_address,
-                                                  amount)
+        is_confirmed = await tezos.confirm_deposit(op_hash,
+                                                   payer_address,
+                                                   amount)
         if not is_confirmed:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -201,6 +201,14 @@ async def post_operation(
         # Simulate the operation alone without sending it
         # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
+        op_estimated_fees = [(int(x["fee"]), x["destination"])
+                             for x in op.contents]
+        estimated_fees = tezos.group_fees(op_estimated_fees)
+        if not tezos.check_credits(db, estimated_fees):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Not enough funds."
+            )
         result = await tezos.tezos_manager.queue_operation(call_data.sender,
                                                            op)
     except MichelsonError as e:

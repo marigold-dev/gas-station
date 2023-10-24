@@ -47,7 +47,7 @@ def find_fees(global_tx, payer_key):
     of one operation in the bulk may vary"""
     op_result = global_tx["contents"]
     fees = [
-        (z, x["destination"])
+        (int(z["change"]), x["destination"])
         for x in op_result
         for y in (
             x["metadata"].get(
@@ -61,7 +61,26 @@ def find_fees(global_tx, payer_key):
     return fees
 
 
-async def confirm_amount(tx_hash, payer, amount: Union[int,str]):
+def group_fees(fees: list[tuple[int, str]]):
+    """Expects a list of (fee, contract_address) and returns the sum
+    of fees by contract."""
+    grouped_fees = {}
+    for fee, address in fees:
+        grouped_fees[address] = grouped_fees.get(address, 0) + fee
+    return grouped_fees
+
+
+def check_credits(db, estimated_fees):
+    for address, total_fee in estimated_fees.items():
+        credits = crud.get_credits_from_contract_address(db, address)
+        if total_fee > credits.amount:
+            print(f"Unsufficient credits {credits.amount} for contract" \
+                  + f"{address}; total fees are {total_fee}.")
+            return False
+    return True
+
+
+async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     receiver = ptz.key.public_key_hash()
     op_result = await find_transaction(tx_hash)
     return any(
@@ -115,13 +134,13 @@ class TezosManager:
     async def update_fees(self, posted_tx):
         op_result = await find_transaction(posted_tx.hash())
         fees = find_fees(op_result, ptz.key.public_key_hash())
-        # TODO group requests
+        fees = group_fees(fees)
         try:
             db = database.SessionLocal()
-            for fee, contract in fees:
+            for contract, fee in fees.items():
                 crud.update_credits_from_contract_address(db,
-                                    amount=int(fee["change"]),
-                                    address=contract)
+                                                          amount=fee,
+                                                          address=contract)
         finally:
             db.close()
 
