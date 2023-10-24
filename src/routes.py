@@ -177,8 +177,10 @@ async def post_operation(
     try:
         # Simulate the operation alone without sending it
         op.autofill()
-        result = await tezos_manager.queue_operation(call_data.sender, op)
-        return result
+        tezos_manager.queue_operation(call_data.sender, op)
+        return {
+            "result": "ok"
+        }
     except MichelsonError as e:
         print("Received failing operation, discarding")
         print(e)

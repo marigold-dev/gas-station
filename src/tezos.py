@@ -79,22 +79,22 @@ class TezosManager:
         self.results = dict()  # TODO: find inspiration
         self.ptz = ptz
         self.block_time = int(constants["minimal_block_delay"])
-        self.nb_retry = 0
+        # self.nb_retry = 0
 
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
     async def queue_operation(self, sender, operation):
         self.results[sender] = "waiting"
         self.ops_queue[sender] = operation
-        while self.results[sender] == "waiting" or self.nb_retry <= 5:
+        while self.results[sender] == "waiting" :
             # TODO wait the right amount of time
             await asyncio.sleep(1)
-            self.nb_retry += 1
+            # self.nb_retry += 1
 
         if self.results[sender] == "waiting":
             raise Exception()
 
-        self.nb_retry = 0
+        # self.nb_retry = 0
 
         return {
             "result": "ok",
