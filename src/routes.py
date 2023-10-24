@@ -76,6 +76,45 @@ async def update_credits(
         )
 
 
+@router.put("/withdraw")
+async def withdraw_credits(
+    withdraw: schemas.CreditWithdraw, db: Session = Depends(database.get_db)
+):
+    try:
+        credits = crud.get_credits(db, withdraw.id)
+    except CreditNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Credit not found.",
+        )
+    if credits.amount < withdraw.amount:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Not enough funds to withdraw."
+        )
+
+    owner_address = credits.owner.address
+    public_key = tezos.get_public_key(owner_address)
+    is_valid = tezos.check_signature(withdraw.to_micheline_pair(),
+                                     withdraw.micheline_signature,
+                                     public_key)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid signature."
+        )
+    result = await tezos.withdraw(tezos.tezos_manager,
+                                  owner_address,
+                                  withdraw.amount)
+    if result["result"] == "ok":
+        credit_update = schemas.CreditUpdate(id=withdraw.id,
+                                             amount=-withdraw.amount,
+                                             # FIXME I guess
+                                             operation_hash="")
+        crud.update_credits(db, credit_update)
+    return result
+
+
 # Users and credits getters
 @router.get("/users/{user_address}", response_model=schemas.User)
 async def get_user(user_address: str, db: Session = Depends(database.get_db)):

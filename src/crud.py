@@ -169,6 +169,16 @@ def update_credits_from_contract_address(db: Session, amount: int, address: str)
         raise CreditNotFound() from e
 
 
+def get_credits(db: Session, uuid: UUID4):
+    """
+    Return a models.Credit or raise UserNotFound exception
+    """
+    db_credit = db.query(models.Credit).get(uuid)
+    if (db_credit is None):
+        raise CreditNotFound()
+    return db_credit
+
+
 def get_credits_from_contract_address(db: Session, contract_address: str):
     try:
         db_contract = db.query(models.Contract).filter(

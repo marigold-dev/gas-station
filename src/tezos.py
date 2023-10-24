@@ -5,13 +5,11 @@ from typing import Union
 from src import database
 # from .pytezos import ptz, pytezos
 from . import crud
-from .schemas import CreditUpdate
 from pytezos.rpc.errors import MichelsonError
+from pytezos.michelson.types import MichelsonType
 import pytezos
-from sqlalchemy.orm import Session
 
 from . import config
-from src import schemas
 
 # Config stuff for pytezos
 assert config.SECRET_KEY is not None and len(config.SECRET_KEY) > 0, \
@@ -107,6 +105,38 @@ def simulate_transaction(operations):
     return op.autofill()
 
 
+def get_public_key(address):
+    assert address.startswith("tz")
+    key = ptz.shell.head.context.contracts[address].manager_key()
+    return key
+
+
+def check_signature(pair_data, signature, public_key):
+    # Type of a withdraw operation
+    pair_type = {
+        "prim": 'pair',
+        "args": [
+            {"prim": 'string'},
+            {"prim": 'mutez'}
+        ]
+    }
+    public_key = pytezos.Key.from_encoded_key(public_key)
+    matcher = MichelsonType.match(pair_type)
+    packed_pair = matcher.from_micheline_value(pair_data).pack()
+    try:
+        # .verify raises an exception when the verification fails
+        return public_key.verify(message=packed_pair, signature=signature)
+    except ValueError:
+        return False
+
+
+async def withdraw(tezos_manager, to, amount):
+    op = ptz.transaction(source=ptz.key.public_key_hash(),
+                         destination=to,
+                         amount=amount).autofill()
+    return await tezos_manager.queue_operation(sender=to, operation=op)
+
+
 class TezosManager:
     def __init__(self, ptz):
         self.ops_queue = OrderedDict()
@@ -121,6 +151,7 @@ class TezosManager:
         self.ops_queue[sender] = operation
         while self.results[sender] == "waiting":
             # TODO wait the right amount of time
+            # FIXME add max waiting time
             await asyncio.sleep(1)
 
         if self.results[sender] == "waiting":
@@ -138,6 +169,11 @@ class TezosManager:
         try:
             db = database.SessionLocal()
             for contract, fee in fees.items():
+                # If this is a transfer to a tz1, then it's a withdraw
+                # and the fees do not matter.
+                # Feels a bit hackish though.
+                if contract.startswith("tz"):
+                    continue
                 crud.update_credits_from_contract_address(db,
                                                           amount=fee,
                                                           address=contract)
