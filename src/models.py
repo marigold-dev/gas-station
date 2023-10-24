@@ -59,21 +59,6 @@ class Entrypoint(Base):
   operations = relationship("Operation", back_populates='entrypoint')
 
 
-# ------- OPERATION ------- #
-class Operation(Base):
-  __tablename__ = "operations"
-
-  id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-  cost = Column(Integer)
-  contract_id = Column(UUID(as_uuid=True), ForeignKey('contracts.id'))
-  entrypoint_id = Column(UUID(as_uuid=True), ForeignKey('entrypoints.id'))
-  transaction_hash = Column(String)
-  status = Column(String) # TODO ENUM
-
-  contract = relationship("Contract", back_populates="operations")
-  entrypoint = relationship("Entrypoint", back_populates="operations")
-
-
 # ------- CREDITS ------- #
 
 class Credit(Base):

@@ -79,22 +79,18 @@ class TezosManager:
         self.results = dict()  # TODO: find inspiration
         self.ptz = ptz
         self.block_time = int(constants["minimal_block_delay"])
-        # self.nb_retry = 0
 
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
     async def queue_operation(self, sender, operation):
         self.results[sender] = "waiting"
         self.ops_queue[sender] = operation
-        while self.results[sender] == "waiting" :
+        while self.results[sender] == "waiting":
             # TODO wait the right amount of time
             await asyncio.sleep(1)
-            # self.nb_retry += 1
 
         if self.results[sender] == "waiting":
             raise Exception()
-
-        # self.nb_retry = 0
 
         return {
             "result": "ok",
@@ -102,20 +98,16 @@ class TezosManager:
         }
 
     async def update_fees(self, posted_tx):
-        db = database.SessionLocal()
         op_result = await find_transaction(posted_tx.hash())
         fees = find_fees(op_result, ptz.key.public_key_hash())
         # TODO group requests
         try:
+            db = database.SessionLocal()
             for fee, contract in fees:
                 crud.update_credits_from_contract_address(db,
                                     amount=int(fee["change"]),
                                     address=contract)
-                crud.update_amount_operation(db,
-                                             op_result["hash"],
-                                             int(fee["change"]))
         finally:
-            print('---close update_fees')
             db.close()
 
     async def main_loop(self):
@@ -152,9 +144,8 @@ class TezosManager:
                 self.ops_queue = dict()
                 print("Tezos loop executed")
             except Exception:
+                #FIXME: Should we raise an Exception here ?
                 pass
-            finally:
-                print(database.engine.pool.status())
 
 
 

@@ -116,32 +116,6 @@ def update_entrypoints(db: Session,
     ).all()
 
 
-def create_operation(db: Session, operation: schemas.CreateOperation):
-    db_operation = models.Operation(
-        **{"contract_id":  operation.contract_id,
-           "entrypoint_id": operation.entrypoint_id}
-    )
-    db.add(db_operation)
-    db.commit()
-    db.refresh(db_operation)
-    return db_operation
-
-
-def update_operation(db: Session, operation_id: str, transaction_hash: str,
-                     status: str):
-    db.query(models.Operation).filter(
-        models.Operation.id == operation_id
-    ).update({'transaction_hash': transaction_hash, "status": status})
-    db.commit()
-
-
-def update_amount_operation(db: Session, hash: str, amount: int):
-    db.query(models.Operation).filter(
-        models.Operation.transaction_hash == hash
-    ).update({'cost': amount})
-    db.commit()
-
-
 def get_user_credits(db: Session, user_id: str):
     """
     Get credits from a user.

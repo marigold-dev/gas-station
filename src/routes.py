@@ -123,10 +123,8 @@ async def post_operation(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Empty operations list",
         )
-    operation_ids = []
     # TODO: check that amount=0?
     for operation in call_data.operations:
-        print(operation)
         contract_address = str(operation["destination"])
 
         # Transfers to implicit accounts are always refused
@@ -143,7 +141,6 @@ async def post_operation(
             )
 
         entrypoint_name = operation["parameters"]["entrypoint"]
-        print(contract_address, entrypoint_name)
         entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
 
         if entrypoint is None:
@@ -151,14 +148,6 @@ async def post_operation(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Entrypoint {entrypoint_name} is not allowed",
             )
-        # Create operation with contract/entrypoint
-        # db_operation = crud.create_operation(
-        #     db,
-        #     schemas.CreateOperation(
-        #         contract_id=str(contract.id), entrypoint_id=str(entrypoint.id)
-        #     ),
-        # )
-        # operation_ids.append(db_operation.id)
 
     # FIXME move to tezos module
     op = ptz.bulk(
@@ -189,27 +178,11 @@ async def post_operation(
             detail=f"Operation is invalid",
         )
     except Exception:
-        print("------- EXCEPTION OPERATION QUEUE")
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"EXCEPTION OPERATION QUEUE",
+            detail=f"Unknown exception raised.",
         )
-
-    # for op_id in operation_ids:
-    #     crud.update_operation(
-    #         db,
-    #         op_id,
-    #         result["transaction_hash"],
-    #         status="ok" if result["result"] == "ok" else "failed",
-    #     )
-
-    # if result["result"] == "failing":
-    #     raise HTTPException(
-    #         # FIXME? Is this the best one?
-    #         status_code=status.HTTP_409_CONFLICT,
-    #         detail=f"Operation is invalid",
-    #     )
 
 
 # Credits

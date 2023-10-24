@@ -11,3 +11,6 @@ class EntrypointNotFound(Exception):
 
 class CreditNotFound(Exception):
     pass
+
+class ConfigurationError(Exception):
+    pass

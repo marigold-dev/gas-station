@@ -3,6 +3,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from src.utils import ConfigurationError
+
 
 def config(filename='sql/database.ini', section='postgresql'):
     parser = ConfigParser()
@@ -24,11 +26,11 @@ try:
     engine = create_engine(
         url=url,
     )
-    SessionLocal = sessionmaker(autocommit=False, bind=engine)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
 except (Exception) as e:
     print(e)
-    pass
+    raise ConfigurationError("Cannot connect to database.")
 
 def get_db():
     if SessionLocal:
@@ -36,5 +38,4 @@ def get_db():
         try:
             yield db
         finally:
-            print('--- close')
             db.close()
