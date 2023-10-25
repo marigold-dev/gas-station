@@ -44,6 +44,7 @@ class CreditUpdate(BaseModel):
     id: UUID4
     amount: int
     operation_hash: str
+    owner_id: str
 
 
 class CreditWithdraw(BaseModel):
