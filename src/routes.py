@@ -52,7 +52,7 @@ async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
     try:
-        payer_address = crud.get_user(db, credits.owner_id).address
+        payer_address = crud.get_credits(db, credits.id).owner.address
         op_hash = credits.operation_hash
         amount = credits.amount
         is_confirmed = await tezos.confirm_deposit(op_hash,
@@ -73,6 +73,11 @@ async def update_credits(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Credit not found.",
+        )
+    except tezos.OperationNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Could not find the operation.",
         )
 
 

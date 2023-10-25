@@ -23,6 +23,10 @@ print(f"INFO: API address is {ptz.key.public_key_hash()}")
 constants = ptz.shell.block.context.constants()
 
 
+class OperationNotFound(Exception):
+    pass
+
+
 async def find_transaction(tx_hash):
     block_time = int(constants["minimal_block_delay"])
     nb_try = 0
@@ -34,7 +38,7 @@ async def find_transaction(tx_hash):
             nb_try += 1
             await asyncio.sleep(block_time)
     else:
-        raise Exception(f"Couldn't find operation {tx_hash}")
+        raise OperationNotFound(tx_hash)
 
     return op_result
 
