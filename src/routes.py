@@ -94,6 +94,7 @@ async def withdraw_credits(
         )
 
     owner_address = credits.owner.address
+    user = crud.get_user_by_address(db, owner_address)
     public_key = tezos.get_public_key(owner_address)
     is_valid = tezos.check_signature(withdraw.to_micheline_pair(),
                                      withdraw.micheline_signature,
@@ -110,6 +111,7 @@ async def withdraw_credits(
         credit_update = schemas.CreditUpdate(id=withdraw.id,
                                              amount=-withdraw.amount,
                                              # FIXME I guess
+                                             owner_id=str(user.id),
                                              operation_hash="")
         crud.update_credits(db, credit_update)
     return result
