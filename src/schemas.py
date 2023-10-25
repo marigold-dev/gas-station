@@ -50,11 +50,13 @@ class CreditUpdate(BaseModel):
 class CreditWithdraw(BaseModel):
     id: UUID4
     amount: int
+    withdraw_counter: int
     micheline_signature: str
 
     def to_micheline_pair(self):
         return [
             {"string": self.id},
+            {"int": self.withdraw_counter},
             {"int": self.amount}
         ]
 
@@ -62,6 +64,10 @@ class CreditWithdraw(BaseModel):
 class WithdrawResponse(BaseModel):
     id: UUID4
     operation_hash: str
+
+
+class WithdrawCounter(BaseModel):
+    counter: int
 
 
 # Contracts

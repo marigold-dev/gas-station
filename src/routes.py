@@ -98,6 +98,13 @@ async def withdraw_credits(
             detail="Not enough funds to withdraw."
         )
 
+    expected_counter = credits.owner.withdraw_counter or 0
+    if expected_counter != withdraw.withdraw_counter:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Bad withdraw counter."
+        )
+
     owner_address = credits.owner.address
     user = crud.get_user_by_address(db, owner_address)
     public_key = tezos.get_public_key(owner_address)
@@ -119,6 +126,9 @@ async def withdraw_credits(
                                              owner_id=str(user.id),
                                              operation_hash="")
         crud.update_credits(db, credit_update)
+        crud.update_user_withdraw_counter(db,
+                                          user.id,
+                                          withdraw.withdraw_counter+1)
     return result
 
 
@@ -127,6 +137,22 @@ async def withdraw_credits(
 async def get_user(user_address: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_user_by_address(db, user_address)
+    except UserNotFound:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found.",
+        )
+
+
+@router.get("/withdraw_counter/{user_address}",
+            response_model=schemas.WithdrawCounter)
+async def get_withdraw_counter(user_address: str,
+                               db: Session = Depends(database.get_db)):
+    try:
+        counter = crud.get_user_by_address(db, user_address).withdraw_counter
+        if counter is None:
+            counter = 0
+        return schemas.WithdrawCounter(counter=counter)
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -13,7 +13,7 @@ def get_user(db: Session, uuid: UUID4):
     Return a models.User or raise UserNotFound exception
     """
     db_user: Optional[models.User] = db.query(models.User).get(uuid)
-    if (db_user is None):
+    if db_user is None:
         raise UserNotFound()
     return db_user
 
@@ -122,6 +122,18 @@ def get_user_credits(db: Session, user_id: str):
     """
     db_credits = db.query(models.Credit).filter(models.Credit.owner_id == user_id).all()
     return db_credits
+
+
+def update_user_withdraw_counter(db: Session,
+                                 user_id: str,
+                                 withdraw_counter: int):
+    try:
+        db.query(models.User).filter(
+            models.User.id == user_id
+        ).update({"withdraw_counter": withdraw_counter})
+        db.commit()
+    except NoResultFound as e:
+        raise UserNotFound from e
 
 
 def create_credits(db: Session, credit: schemas.CreditCreation):

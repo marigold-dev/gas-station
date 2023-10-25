@@ -121,6 +121,7 @@ def check_signature(pair_data, signature, public_key):
         "prim": 'pair',
         "args": [
             {"prim": 'string'},
+            {"prim": "int"},
             {"prim": 'mutez'}
         ]
     }
