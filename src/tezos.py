@@ -4,7 +4,7 @@ from typing import Union
 
 from src import database
 # from .pytezos import ptz, pytezos
-from . import crud
+from . import crud, schemas
 from pytezos.rpc.errors import MichelsonError
 from pytezos.michelson.types import MichelsonType
 import pytezos
@@ -23,6 +23,10 @@ print(f"INFO: API address is {ptz.key.public_key_hash()}")
 constants = ptz.shell.block.context.constants()
 
 
+class OperationNotFound(Exception):
+    pass
+
+
 async def find_transaction(tx_hash):
     block_time = int(constants["minimal_block_delay"])
     nb_try = 0
@@ -34,7 +38,7 @@ async def find_transaction(tx_hash):
             nb_try += 1
             await asyncio.sleep(block_time)
     else:
-        raise Exception(f"Couldn't find operation {tx_hash}")
+        raise OperationNotFound(tx_hash)
 
     return op_result
 
@@ -90,6 +94,15 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     )
 
 
+async def confirm_withdraw(tx_hash, db, user_id, withdraw):
+    await find_transaction(tx_hash)
+    credit_update = schemas.CreditUpdate(id=withdraw.id,
+                                         amount=-withdraw.amount,
+                                         owner_id=user_id, operation_hash="")
+    crud.update_credits(db, credit_update)
+    crud.update_user_withdraw_counter(db, user_id, withdraw.withdraw_counter+1)
+
+
 def simulate_transaction(operations):
     op = ptz.bulk(
         *[
@@ -117,6 +130,7 @@ def check_signature(pair_data, signature, public_key):
         "prim": 'pair',
         "args": [
             {"prim": 'string'},
+            {"prim": "int"},
             {"prim": 'mutez'}
         ]
     }

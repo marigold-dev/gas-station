@@ -11,6 +11,7 @@ class User(Base):
   id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
   name = Column(String)
   address = Column(String, unique=True)
+  withdraw_counter = Column(Integer, default=0)
 
   contracts = relationship("Contract", back_populates="owner")
   credits = relationship("Credit", back_populates="owner")
