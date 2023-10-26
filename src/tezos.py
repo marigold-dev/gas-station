@@ -4,7 +4,7 @@ from typing import Union
 
 from src import database
 # from .pytezos import ptz, pytezos
-from . import crud
+from . import crud, schemas
 from pytezos.rpc.errors import MichelsonError
 from pytezos.michelson.types import MichelsonType
 import pytezos
@@ -92,6 +92,15 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
         and op["destination"] == receiver
         and int(op["amount"]) == int(amount)
     )
+
+
+async def confirm_withdraw(tx_hash, db, user_id, withdraw):
+    await find_transaction(tx_hash)
+    credit_update = schemas.CreditUpdate(id=withdraw.id,
+                                         amount=-withdraw.amount,
+                                         owner_id=user_id, operation_hash="")
+    crud.update_credits(db, credit_update)
+    crud.update_user_withdraw_counter(db, user_id, withdraw.withdraw_counter+1)
 
 
 def simulate_transaction(operations):

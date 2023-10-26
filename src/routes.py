@@ -4,6 +4,7 @@ from typing import List
 import src.crud as crud
 import src.schemas as schemas
 import uuid
+import asyncio
 
 from sqlalchemy.orm import Session
 from . import tezos
@@ -120,15 +121,15 @@ async def withdraw_credits(
                                   owner_address,
                                   withdraw.amount)
     if result["result"] == "ok":
-        credit_update = schemas.CreditUpdate(id=withdraw.id,
-                                             amount=-withdraw.amount,
-                                             # FIXME I guess
-                                             owner_id=str(user.id),
-                                             operation_hash="")
-        crud.update_credits(db, credit_update)
-        crud.update_user_withdraw_counter(db,
-                                          user.id,
-                                          withdraw.withdraw_counter+1)
+        # Starts a independent loop to check that the operation
+        # has been confirmed
+        asyncio.create_task(
+            tezos.confirm_withdraw(result["transaction_hash"],
+                                   db,
+                                   str(user.id),
+                                   withdraw)
+        )
+
     return result
 
 
