@@ -9,6 +9,7 @@ class UserBase(BaseModel):
 class User(UserBase):
   id: UUID4
   name: str
+  withdraw_counter: int
 
 class UserCreation(UserBase):
     name: str
