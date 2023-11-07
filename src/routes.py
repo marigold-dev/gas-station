@@ -117,6 +117,11 @@ async def withdraw_credits(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Invalid signature."
         )
+    # We increment the counter even if the withdraw fails to prevent
+    # the counter from being used again immediately.
+    crud.update_user_withdraw_counter(db,
+                                      str(user.id),
+                                      withdraw.withdraw_counter+1)
     result = await tezos.withdraw(tezos.tezos_manager,
                                   owner_address,
                                   withdraw.amount)

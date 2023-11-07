@@ -100,7 +100,6 @@ async def confirm_withdraw(tx_hash, db, user_id, withdraw):
                                          amount=-withdraw.amount,
                                          owner_id=user_id, operation_hash="")
     crud.update_credits(db, credit_update)
-    crud.update_user_withdraw_counter(db, user_id, withdraw.withdraw_counter+1)
 
 
 def simulate_transaction(operations):
