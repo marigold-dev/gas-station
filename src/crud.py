@@ -53,7 +53,7 @@ def get_contracts_by_credit(db: Session, credit_id: str):
         models.Contract.credit_id == credit_id).all()
 
 
-def get_contract(db: Session, address: str):
+def get_contract_by_address(db: Session, address: str):
     """
     Return a models.Contract or raise ContractNotFound exception
     """
@@ -65,21 +65,37 @@ def get_contract(db: Session, address: str):
         raise ContractNotFound() from e
 
 
-def get_entrypoints(db: Session,
-                    contract_address: str) -> List[models.Entrypoint]:
+def get_contract(db: Session, contract_id: str):
+    """
+    Return a models.Contract or raise ContractNotFound exception
+    """
+    try:
+        return db.query(models.Contract).get(contract_id)
+    except NoResultFound as e:
+        raise ContractNotFound() from e
+
+
+def get_entrypoints(
+    db: Session,
+    contract_address_or_id: str
+) -> List[models.Entrypoint]:
     """
     Return a list of models.Contract or raise ContractNotFound exception
     """
-    contract = get_contract(db, contract_address)
+    if contract_address_or_id.startswith("KT"):
+        contract = get_contract_by_address(db, contract_address_or_id)
+    else:
+        contract = get_contract(db, contract_address_or_id)
     return contract.entrypoints
 
 
-def get_entrypoint(db: Session, contract_address: str,
+def get_entrypoint(db: Session,
+                   contract_address_or_id: str,
                    name: str) -> Optional[models.Entrypoint]:
     """
     Return a models.Entrypoint or raise EntrypointNotFound exception
     """
-    entrypoints = get_entrypoints(db, contract_address)
+    entrypoints = get_entrypoints(db, contract_address_or_id)
     entrypoint = [e for e in entrypoints if e.name == name]  # type: ignore
     if len(entrypoint) == 0:
         raise EntrypointNotFound()

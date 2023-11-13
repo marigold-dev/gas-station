@@ -9,6 +9,7 @@ import asyncio
 from sqlalchemy.orm import Session
 from . import tezos
 from pytezos.rpc.errors import MichelsonError
+from pytezos.crypto.encoding import is_address
 from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 
 
@@ -139,10 +140,13 @@ async def withdraw_credits(
 
 
 # Users and credits getters
-@router.get("/users/{user_address}", response_model=schemas.User)
-async def get_user(user_address: str, db: Session = Depends(database.get_db)):
+@router.get("/users/{address_or_id}", response_model=schemas.User)
+async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
     try:
-        return crud.get_user_by_address(db, user_address)
+        if is_address(address_or_id) and address_or_id.startswith("tz"):
+            return crud.get_user_by_address(db, address_or_id)
+        else:
+            return crud.get_user(db, address_or_id)
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -150,12 +154,17 @@ async def get_user(user_address: str, db: Session = Depends(database.get_db)):
         )
 
 
-@router.get("/credits/{user_id}", response_model=list[schemas.Credit])
+@router.get("/credits/{user_address_or_id}",
+            response_model=list[schemas.Credit])
 async def credits_for_user(
-    user_id: str, db: Session = Depends(database.get_db)
+    user_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.get_user(db, user_id).credits
+        if is_address(user_address_or_id) \
+           and user_address_or_id.startswith("tz"):
+            return crud.get_user_by_address(db, user_address_or_id).credits
+        else:
+            return crud.get_user(db, user_address_or_id).credits
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -164,11 +173,13 @@ async def credits_for_user(
 
 
 # Contracts
-@router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
-async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
+@router.get("/contracts/user/{user_address}",
+            response_model=list[schemas.Contract])
+async def get_user_contracts(user_address: str,
+                             db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_user(db, user_address)
-    except UserNotFound as e:
+    except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
         )
@@ -179,15 +190,19 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
 async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_credit(db, credit_id)
-    except CreditNotFound as e:
+    except CreditNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Credit not found."
         )
 
 
-@router.get("/contracts/{address}", response_model=schemas.Contract)
-async def get_contract(address: str, db: Session = Depends(database.get_db)):
-    contract = crud.get_contract(db, address)
+@router.get("/contracts/{address_or_id}", response_model=schemas.Contract)
+async def get_contract(address_or_id: str,
+                       db: Session = Depends(database.get_db)):
+    if is_address(address_or_id) and address_or_id.startswith("KT"):
+        contract = crud.get_contract_by_address(db, address_or_id)
+    else:
+        contract = crud.get_contract(db, address_or_id)
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
@@ -196,24 +211,35 @@ async def get_contract(address: str, db: Session = Depends(database.get_db)):
 
 
 # Entrypoints
-@router.get("/entrypoints/{contract_address}", response_model=list[schemas.Entrypoint])
+@router.get("/entrypoints/{contract_address_or_id}",
+            response_model=list[schemas.Entrypoint])
 async def get_entrypoints(
-    contract_address: str, db: Session = Depends(database.get_db)
+    contract_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.get_entrypoints(db, contract_address)
-    except ContractNotFound as e:
+        if contract_address_or_id.startswith("KT"):
+            assert is_address(contract_address_or_id)
+        return crud.get_entrypoints(db, contract_address_or_id)
+    except ContractNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
         )
+    except AssertionError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid address."
+        )
 
-@router.get("/entrypoints/{contract_address}/{name}", response_model=schemas.Entrypoint)
+
+@router.get("/entrypoints/{contract_address_or_id}/{name}",
+            response_model=schemas.Entrypoint)
 async def get_entrypoint(
-    contract_address: str, name: str, db: Session = Depends(database.get_db)
+    contract_address_or_id: str,
+    name: str,
+    db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.get_entrypoint(db, contract_address, name)
-    except EntrypointNotFound as e:
+        return crud.get_entrypoint(db, contract_address_or_id, name)
+    except EntrypointNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Entrypoint not found."
         )
@@ -240,7 +266,7 @@ async def post_operation(
                 detail=f"Target {contract_address} is not allowed",
             )
         try:
-            contract = crud.get_contract(db, contract_address)
+            contract = crud.get_contract_by_address(db, contract_address)
         except ContractNotFound:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -250,9 +276,7 @@ async def post_operation(
         entrypoint_name = operation["parameters"]["entrypoint"]
         print(contract_address, entrypoint_name)
         try:
-            entrypoint = crud.get_entrypoint(db,
-                                             str(contract.address),
-                                             entrypoint_name)
+            crud.get_entrypoint(db, str(contract.address), entrypoint_name)
         except EntrypointNotFound:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
