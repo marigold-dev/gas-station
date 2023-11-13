@@ -150,22 +150,6 @@ async def get_user(user_address: str, db: Session = Depends(database.get_db)):
         )
 
 
-@router.get("/withdraw_counter/{user_address}",
-            response_model=schemas.WithdrawCounter)
-async def get_withdraw_counter(user_address: str,
-                               db: Session = Depends(database.get_db)):
-    try:
-        counter = crud.get_user_by_address(db, user_address).withdraw_counter
-        if counter is None:
-            counter = 0
-        return schemas.WithdrawCounter(counter=counter)
-    except UserNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
-        )
-
-
 @router.get("/credits/{user_id}", response_model=list[schemas.Credit])
 async def credits_for_user(
     user_id: str, db: Session = Depends(database.get_db)
