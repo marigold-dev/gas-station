@@ -62,7 +62,7 @@ async def update_credits(
                                                    amount)
         if not is_confirmed:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Could not find confirmation for {amount} with {op_hash}"
             )
         return crud.update_credits(db, credits)
@@ -96,14 +96,14 @@ async def withdraw_credits(
         )
     if credits.amount < withdraw.amount:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough funds to withdraw."
         )
 
     expected_counter = credits.owner.withdraw_counter or 0
     if expected_counter != withdraw.withdraw_counter:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Bad withdraw counter."
         )
 
@@ -115,7 +115,7 @@ async def withdraw_credits(
                                      public_key)
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid signature."
         )
     # We increment the counter even if the withdraw fails to prevent
@@ -252,7 +252,7 @@ async def post_operation(
 ):
     if len(call_data.operations) == 0:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Empty operations list",
         )
     # TODO: check that amount=0?
@@ -262,14 +262,14 @@ async def post_operation(
         # Transfers to implicit accounts are always refused
         if not contract_address.startswith("KT"):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Target {contract_address} is not allowed",
             )
         try:
             contract = crud.get_contract_by_address(db, contract_address)
         except ContractNotFound:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Target {contract_address} is not allowed",
             )
 
@@ -279,7 +279,7 @@ async def post_operation(
             crud.get_entrypoint(db, str(contract.address), entrypoint_name)
         except EntrypointNotFound:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not allowed",
             )
 
@@ -292,7 +292,7 @@ async def post_operation(
         estimated_fees = tezos.group_fees(op_estimated_fees)
         if not tezos.check_credits(db, estimated_fees):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Not enough funds."
             )
         result = await tezos.tezos_manager.queue_operation(call_data.sender,
@@ -302,7 +302,7 @@ async def post_operation(
         print(e)
         raise HTTPException(
             # FIXME? Is this the best one?
-            status_code=status.HTTP_409_CONFLICT,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Operation is invalid",
         )
     except Exception:
