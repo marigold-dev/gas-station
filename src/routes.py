@@ -9,6 +9,7 @@ import asyncio
 from sqlalchemy.orm import Session
 from . import tezos
 from pytezos.rpc.errors import MichelsonError
+from pytezos.crypto.encoding import is_address
 from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 
 
@@ -61,7 +62,7 @@ async def update_credits(
                                                    amount)
         if not is_confirmed:
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Could not find confirmation for {amount} with {op_hash}"
             )
         return crud.update_credits(db, credits)
@@ -95,14 +96,14 @@ async def withdraw_credits(
         )
     if credits.amount < withdraw.amount:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough funds to withdraw."
         )
 
     expected_counter = credits.owner.withdraw_counter or 0
     if expected_counter != withdraw.withdraw_counter:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Bad withdraw counter."
         )
 
@@ -114,7 +115,7 @@ async def withdraw_credits(
                                      public_key)
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid signature."
         )
     # We increment the counter even if the withdraw fails to prevent
@@ -139,10 +140,13 @@ async def withdraw_credits(
 
 
 # Users and credits getters
-@router.get("/users/{user_address}", response_model=schemas.User)
-async def get_user(user_address: str, db: Session = Depends(database.get_db)):
+@router.get("/users/{address_or_id}", response_model=schemas.User)
+async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
     try:
-        return crud.get_user_by_address(db, user_address)
+        if is_address(address_or_id) and address_or_id.startswith("tz"):
+            return crud.get_user_by_address(db, address_or_id)
+        else:
+            return crud.get_user(db, address_or_id)
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -150,28 +154,17 @@ async def get_user(user_address: str, db: Session = Depends(database.get_db)):
         )
 
 
-@router.get("/withdraw_counter/{user_address}",
-            response_model=schemas.WithdrawCounter)
-async def get_withdraw_counter(user_address: str,
-                               db: Session = Depends(database.get_db)):
-    try:
-        counter = crud.get_user_by_address(db, user_address).withdraw_counter
-        if counter is None:
-            counter = 0
-        return schemas.WithdrawCounter(counter=counter)
-    except UserNotFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
-        )
-
-
-@router.get("/credits/{user_id}", response_model=list[schemas.Credit])
+@router.get("/credits/{user_address_or_id}",
+            response_model=list[schemas.Credit])
 async def credits_for_user(
-    user_id: str, db: Session = Depends(database.get_db)
+    user_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.get_user(db, user_id).credits
+        if is_address(user_address_or_id) \
+           and user_address_or_id.startswith("tz"):
+            return crud.get_user_by_address(db, user_address_or_id).credits
+        else:
+            return crud.get_user(db, user_address_or_id).credits
     except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -180,11 +173,13 @@ async def credits_for_user(
 
 
 # Contracts
-@router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
-async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
+@router.get("/contracts/user/{user_address}",
+            response_model=list[schemas.Contract])
+async def get_user_contracts(user_address: str,
+                             db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_user(db, user_address)
-    except UserNotFound as e:
+    except UserNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
         )
@@ -195,15 +190,19 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
 async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_credit(db, credit_id)
-    except CreditNotFound as e:
+    except CreditNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Credit not found."
         )
 
 
-@router.get("/contracts/{address}", response_model=schemas.Contract)
-async def get_contract(address: str, db: Session = Depends(database.get_db)):
-    contract = crud.get_contract(db, address)
+@router.get("/contracts/{address_or_id}", response_model=schemas.Contract)
+async def get_contract(address_or_id: str,
+                       db: Session = Depends(database.get_db)):
+    if is_address(address_or_id) and address_or_id.startswith("KT"):
+        contract = crud.get_contract_by_address(db, address_or_id)
+    else:
+        contract = crud.get_contract(db, address_or_id)
     if not contract:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
@@ -212,24 +211,35 @@ async def get_contract(address: str, db: Session = Depends(database.get_db)):
 
 
 # Entrypoints
-@router.get("/entrypoints/{contract_address}", response_model=list[schemas.Entrypoint])
+@router.get("/entrypoints/{contract_address_or_id}",
+            response_model=list[schemas.Entrypoint])
 async def get_entrypoints(
-    contract_address: str, db: Session = Depends(database.get_db)
+    contract_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.get_entrypoints(db, contract_address)
-    except ContractNotFound as e:
+        if contract_address_or_id.startswith("KT"):
+            assert is_address(contract_address_or_id)
+        return crud.get_entrypoints(db, contract_address_or_id)
+    except ContractNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
         )
+    except AssertionError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid address."
+        )
 
-@router.get("/entrypoints/{contract_address}/{name}", response_model=schemas.Entrypoint)
+
+@router.get("/entrypoints/{contract_address_or_id}/{name}",
+            response_model=schemas.Entrypoint)
 async def get_entrypoint(
-    contract_address: str, name: str, db: Session = Depends(database.get_db)
+    contract_address_or_id: str,
+    name: str,
+    db: Session = Depends(database.get_db)
 ):
     try:
-        return crud.get_entrypoint(db, contract_address, name)
-    except EntrypointNotFound as e:
+        return crud.get_entrypoint(db, contract_address_or_id, name)
+    except EntrypointNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Entrypoint not found."
         )
@@ -238,11 +248,11 @@ async def get_entrypoint(
 # Operations
 @router.post("/operation")
 async def post_operation(
-    call_data: schemas.CallData, db: Session = Depends(database.get_db)
+    call_data: schemas.UnsignedCall, db: Session = Depends(database.get_db)
 ):
     if len(call_data.operations) == 0:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Empty operations list",
         )
     # TODO: check that amount=0?
@@ -252,26 +262,24 @@ async def post_operation(
         # Transfers to implicit accounts are always refused
         if not contract_address.startswith("KT"):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Target {contract_address} is not allowed",
             )
         try:
-            contract = crud.get_contract(db, contract_address)
+            contract = crud.get_contract_by_address(db, contract_address)
         except ContractNotFound:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Target {contract_address} is not allowed",
             )
 
         entrypoint_name = operation["parameters"]["entrypoint"]
         print(contract_address, entrypoint_name)
         try:
-            entrypoint = crud.get_entrypoint(db,
-                                             str(contract.address),
-                                             entrypoint_name)
+            crud.get_entrypoint(db, str(contract.address), entrypoint_name)
         except EntrypointNotFound:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not allowed",
             )
 
@@ -284,17 +292,19 @@ async def post_operation(
         estimated_fees = tezos.group_fees(op_estimated_fees)
         if not tezos.check_credits(db, estimated_fees):
             raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Not enough funds."
             )
-        result = await tezos.tezos_manager.queue_operation(call_data.sender,
-                                                           op)
+        result = await tezos.tezos_manager.queue_operation(
+            call_data.sender_address,
+            op
+        )
     except MichelsonError as e:
         print("Received failing operation, discarding")
         print(e)
         raise HTTPException(
             # FIXME? Is this the best one?
-            status_code=status.HTTP_409_CONFLICT,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Operation is invalid",
         )
     except Exception:
@@ -304,3 +314,26 @@ async def post_operation(
             detail=f"Unknown exception raised.",
         )
     return result
+
+
+@router.post("/signed_operation")
+async def signed_operation(
+    call_data: schemas.SignedCall, db: Session = Depends(database.get_db)
+):
+    # In order for the user to sign Micheline, we need to
+    # FIXME: this is a serious issue, we should sign the contract address too.
+    signed_data = [x["parameters"]["value"] for x in call_data.operations]
+    if not tezos.check_signature(
+        signed_data,
+        call_data.signature,
+        call_data.sender_key,
+        call_data.micheline_type
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid signature."
+        )
+    address = tezos.public_key_hash(call_data.sender_key)
+    call_data = schemas.UnsignedCall(sender_address=address,
+                                     operations=call_data.operations)
+    return await post_operation(call_data, db)
