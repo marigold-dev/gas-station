@@ -88,8 +88,15 @@ class ContractCreation(ContractBase):
   credit_id: UUID4
 
 # Operations
-# TODO: right now the sender isn't checked, as we use permits anyway
-class CallData(BaseModel):
-    sender: str
+class UnsignedCall(BaseModel):
+    """Data sent when posting an operation. The sender is mandatory."""
+    sender_address: str
     operations: list[dict[str, Any]]
 
+
+class SignedCall(BaseModel):
+    """Data sent when posting an operation. The signature"""
+    sender_key: str
+    operations: list[dict[str, Any]]
+    signature: str
+    micheline_type: Any

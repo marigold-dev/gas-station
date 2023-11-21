@@ -123,16 +123,17 @@ def get_public_key(address):
     return key
 
 
-def check_signature(pair_data, signature, public_key):
-    # Type of a withdraw operation
-    pair_type = {
-        "prim": 'pair',
-        "args": [
-            {"prim": 'string'},
-            {"prim": "int"},
-            {"prim": 'mutez'}
-        ]
-    }
+def check_signature(pair_data, signature, public_key, pair_type=None):
+    if pair_type is None:
+        # Type of a withdraw operation
+        pair_type = {
+            "prim": 'pair',
+            "args": [
+                {"prim": 'string'},
+                {"prim": "int"},
+                {"prim": 'mutez'}
+            ]
+        }
     public_key = pytezos.Key.from_encoded_key(public_key)
     matcher = MichelsonType.match(pair_type)
     packed_pair = matcher.from_micheline_value(pair_data).pack()
@@ -141,6 +142,11 @@ def check_signature(pair_data, signature, public_key):
         return public_key.verify(message=packed_pair, signature=signature)
     except ValueError:
         return False
+
+
+def public_key_hash(public_key: str):
+    key = pytezos.Key.from_encoded_key(public_key)
+    return key.public_key_hash()
 
 
 async def withdraw(tezos_manager, to, amount):
@@ -160,6 +166,7 @@ class TezosManager:
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
     async def queue_operation(self, sender, operation):
+        print(operation)
         self.results[sender] = "waiting"
         self.ops_queue[sender] = operation
         while self.results[sender] == "waiting":

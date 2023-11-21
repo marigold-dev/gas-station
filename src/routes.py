@@ -248,7 +248,7 @@ async def get_entrypoint(
 # Operations
 @router.post("/operation")
 async def post_operation(
-    call_data: schemas.CallData, db: Session = Depends(database.get_db)
+    call_data: schemas.UnsignedCall, db: Session = Depends(database.get_db)
 ):
     if len(call_data.operations) == 0:
         raise HTTPException(
@@ -295,8 +295,10 @@ async def post_operation(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Not enough funds."
             )
-        result = await tezos.tezos_manager.queue_operation(call_data.sender,
-                                                           op)
+        result = await tezos.tezos_manager.queue_operation(
+            call_data.sender_address,
+            op
+        )
     except MichelsonError as e:
         print("Received failing operation, discarding")
         print(e)
@@ -312,3 +314,26 @@ async def post_operation(
             detail=f"Unknown exception raised.",
         )
     return result
+
+
+@router.post("/signed_operation")
+async def signed_operation(
+    call_data: schemas.SignedCall, db: Session = Depends(database.get_db)
+):
+    # In order for the user to sign Micheline, we need to
+    # FIXME: this is a serious issue, we should sign the contract address too.
+    signed_data = [x["parameters"]["value"] for x in call_data.operations]
+    if not tezos.check_signature(
+        signed_data,
+        call_data.signature,
+        call_data.sender_key,
+        call_data.micheline_type
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid signature."
+        )
+    address = tezos.public_key_hash(call_data.sender_key)
+    call_data = schemas.UnsignedCall(sender_address=address,
+                                     operations=call_data.operations)
+    return await post_operation(call_data, db)
