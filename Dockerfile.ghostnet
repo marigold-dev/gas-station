@@ -1,13 +1,13 @@
 # Builder stage
 FROM python:3.11-slim AS builder
 RUN apt-get update && \
-  apt-get install -y libpq-dev gcc libgmp-dev libsodium-dev pkg-config
+  apt-get install -y libpq-dev gcc libgmp-dev libsodium-dev pkg-config build-essential automake libtool libffi-dev
 # Create the virtual environment
 RUN python -m venv /opt/venv
 # Activate the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt --use-deprecated=legacy-resolver
 # Install pytest
 RUN pip install pytest
 
