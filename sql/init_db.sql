@@ -1,7 +1,7 @@
-INSERT INTO users("id", "name", "address")
+INSERT INTO users("id", "name", "address", "withdraw_counter")
         VALUES
-        ('164b18e2-205b-47fa-8fa5-e9961b3a8437', 'Alfred', 'tz1VLKbNYhmfyQSZzsdLWrbtVbyjsRf9qEjN'),
-        ('b8c23360-9a81-4450-93d8-ea32a2d7467e', 'Quentin', 'tz1YdFws2E182i25ezpHvEvcn4vh74XcMDFi');
+        ('164b18e2-205b-47fa-8fa5-e9961b3a8437', 'Alfred', 'tz1VLKbNYhmfyQSZzsdLWrbtVbyjsRf9qEjN', 0),
+        ('b8c23360-9a81-4450-93d8-ea32a2d7467e', 'Quentin', 'tz1YdFws2E182i25ezpHvEvcn4vh74XcMDFi', 0);
 
 INSERT INTO credits("id", "amount", "owner_id")
         VALUES
