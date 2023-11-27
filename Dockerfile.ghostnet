@@ -1,7 +1,7 @@
 # Builder stage
 FROM python:3.11-slim AS builder
 RUN apt-get update && \
-apt-get install -y libpq-dev gcc libgmp-dev libsodium-dev
+  apt-get install -y libpq-dev gcc libgmp-dev libsodium-dev pkg-config
 # Create the virtual environment
 RUN python -m venv /opt/venv
 # Activate the virtual environment
