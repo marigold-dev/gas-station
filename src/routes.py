@@ -307,7 +307,8 @@ async def post_operation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Operation is invalid",
         )
-    except Exception:
+    except Exception as e:
+        print(e)
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
