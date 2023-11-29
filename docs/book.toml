@@ -1,0 +1,6 @@
+[book]
+authors = ["Quentin Burg"]
+language = "en"
+multilingual = false
+src = "src"
+title = "book"
