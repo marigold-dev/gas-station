@@ -5,6 +5,8 @@ on:
     branches:
       - 'release-ghostnet'
       - 'main' # Remove this line when we want more controlled releases
+    paths-ignore:
+      - 'docs/**'
   pull_request:
     branches:
       - 'release-ghostnet'
