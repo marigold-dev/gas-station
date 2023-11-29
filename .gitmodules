@@ -1,3 +1,6 @@
 [submodule "permit-cameligo"]
 	path = permit-cameligo
 	url = https://github.com/aguillon/permit-cameligo
+[submodule "docs/marigold-docs-theme"]
+	path = docs/marigold-docs-theme
+	url = git@github.com:marigold-dev/marigold-docs-theme.git
