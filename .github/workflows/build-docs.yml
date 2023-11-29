@@ -15,7 +15,7 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
            mdbook-version: 'latest'
-      - run: mdbook build
+      - run: cd docs && mdbook build
       - name: store Artefact
         uses: actions/upload-artifact@v2
         with:
