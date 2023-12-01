@@ -3,6 +3,7 @@ import asyncio
 from typing import Union
 
 from src import database
+
 # from .pytezos import ptz, pytezos
 from . import crud, schemas
 from pytezos.rpc.errors import MichelsonError
@@ -12,12 +13,11 @@ import pytezos
 from . import config
 
 # Config stuff for pytezos
-assert config.SECRET_KEY is not None and len(config.SECRET_KEY) > 0, \
-  "Could not read secret key"
+assert (
+    config.SECRET_KEY is not None and len(config.SECRET_KEY) > 0
+), "Could not read secret key"
 
-admin_key = pytezos.pytezos.key.from_encoded_key(
-    config.SECRET_KEY
-)
+admin_key = pytezos.pytezos.key.from_encoded_key(config.SECRET_KEY)
 ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
 print(f"INFO: API address is {ptz.key.public_key_hash()}")
 constants = ptz.shell.block.context.constants()
@@ -52,9 +52,7 @@ def find_fees(global_tx, payer_key):
         (int(z["change"]), x["destination"])
         for x in op_result
         for y in (
-            x["metadata"].get(
-                "operation_result", {}
-            ).get("balance_updates", {}),
+            x["metadata"].get("operation_result", {}).get("balance_updates", {}),
             x["metadata"].get("balance_updates", {}),
         )
         for z in y
@@ -76,8 +74,10 @@ def check_credits(db, estimated_fees):
     for address, total_fee in estimated_fees.items():
         credits = crud.get_credits_from_contract_address(db, address)
         if total_fee > credits.amount:
-            print(f"Unsufficient credits {credits.amount} for contract" \
-                  + f"{address}; total fees are {total_fee}.")
+            print(
+                f"Unsufficient credits {credits.amount} for contract"
+                + f"{address}; total fees are {total_fee}."
+            )
             return False
     return True
 
@@ -85,8 +85,13 @@ def check_credits(db, estimated_fees):
 async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     receiver = ptz.key.public_key_hash()
     op_result = await find_transaction(tx_hash)
+    print(op_result["contents"])
+    print("payer " + str(payer))
+    print("receiver " + str(receiver))
+    print("amount " + str(amount))
     return any(
-        op for op in op_result["contents"]
+        op
+        for op in op_result["contents"]
         if op["kind"] == "transaction"
         and op["source"] == payer
         and op["destination"] == receiver
@@ -96,9 +101,9 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
 
 async def confirm_withdraw(tx_hash, db, user_id, withdraw):
     await find_transaction(tx_hash)
-    credit_update = schemas.CreditUpdate(id=withdraw.id,
-                                         amount=-withdraw.amount,
-                                         owner_id=user_id, operation_hash="")
+    credit_update = schemas.CreditUpdate(
+        id=withdraw.id, amount=-withdraw.amount, owner_id=user_id, operation_hash=""
+    )
     crud.update_credits(db, credit_update)
 
 
@@ -127,12 +132,8 @@ def check_signature(pair_data, signature, public_key, pair_type=None):
     if pair_type is None:
         # Type of a withdraw operation
         pair_type = {
-            "prim": 'pair',
-            "args": [
-                {"prim": 'string'},
-                {"prim": "int"},
-                {"prim": 'mutez'}
-            ]
+            "prim": "pair",
+            "args": [{"prim": "string"}, {"prim": "int"}, {"prim": "mutez"}],
         }
     public_key = pytezos.Key.from_encoded_key(public_key)
     matcher = MichelsonType.match(pair_type)
@@ -150,9 +151,9 @@ def public_key_hash(public_key: str):
 
 
 async def withdraw(tezos_manager, to, amount):
-    op = ptz.transaction(source=ptz.key.public_key_hash(),
-                         destination=to,
-                         amount=amount).autofill()
+    op = ptz.transaction(
+        source=ptz.key.public_key_hash(), destination=to, amount=amount
+    ).autofill()
     return await tezos_manager.queue_operation(sender=to, operation=op)
 
 
@@ -194,9 +195,9 @@ class TezosManager:
                 # Feels a bit hackish though.
                 if contract.startswith("tz"):
                     continue
-                crud.update_credits_from_contract_address(db,
-                                                          amount=fee,
-                                                          address=contract)
+                crud.update_credits_from_contract_address(
+                    db, amount=fee, address=contract
+                )
         finally:
             db.close()
 
@@ -234,9 +235,8 @@ class TezosManager:
                 self.ops_queue = dict()
                 print("Tezos loop executed")
             except Exception:
-                #FIXME: Should we raise an Exception here ?
+                # FIXME: Should we raise an Exception here ?
                 pass
-
 
 
 tezos_manager = TezosManager(ptz)
