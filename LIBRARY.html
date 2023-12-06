@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>book</title>
-        <meta name="robots" content="noindex">
+        <title>SDKs - book</title>
 
 
         <!-- Custom HTML head -->
@@ -89,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="WELCOME.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="WEBAPP.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="LIBRARY.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="API.html">API</a></li><li class="chapter-item expanded affix "><a href="TUTORIAL.html">Tutorial</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="WELCOME.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="WEBAPP.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="LIBRARY.html" class="active">SDKs</a></li><li class="chapter-item expanded affix "><a href="API.html">API</a></li><li class="chapter-item expanded affix "><a href="TUTORIAL.html">Tutorial</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -174,31 +173,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="welcome"><a class="header" href="#welcome">Welcome</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="gas-station-webapp"><a class="header" href="#gas-station-webapp">Gas Station Webapp</a></h1>
-<p>Pour faciliter l'expérience utilisateur avec la Gas Station et notamment l'interaction avec les contrats et le management du budget pour payer les fees, nous avons développer une webapp, disponible <a href="https://gas-station.marigold.dev/">ici</a>.</p>
-<p>⚠️ Note : disponible seulement sur Ghostnet pour le moment ⚠️</p>
-<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
-<h3 id="wallet-connexion"><a class="header" href="#wallet-connexion">Wallet connexion</a></h3>
-<p>Comme toutes les dApps, une des premières choses à faire est de connecter votre wallet en cliquant sur le bouton en haut à droite.</p>
-<p><img src="./assets/wallet_connection.png" alt="Wallet connection" /></p>
-<h3 id="your-contracts"><a class="header" href="#your-contracts">Your contracts</a></h3>
-<p>Sur la homepage vous pourrez retrouver tous vos contracts enregistrés sur la Gas Station ainsi que leurs entrypoints activés.</p>
-<p><img src="./assets/homepage.png" alt="Homepage" /></p>
-<h3 id="add-a-new-contract"><a class="header" href="#add-a-new-contract">Add a new contract</a></h3>
-<p>Pour ajouter un nouveau contract, cliquer sur <code>Add contract</code> et remplissez les informations demandées.
-Remplissez en premier l'adresse du contrat afin de récupérer les entrypoints associés à votre contrat.
-Donnez ensuite un nom et activer les entrypoints pour lesquels vous voulez payer les fees.</p>
-<p><img src="./assets/add-contract.png" alt="Add contract" /></p>
-<h3 id="add-credits-on-your-vault"><a class="header" href="#add-credits-on-your-vault">Add credits on your vault</a></h3>
-<p>Pour ajouter des crédits dans votre vault, aller sur la page <code>My credits</code>. Renseignez ensuite le nombre de XTZ que vous voulez envoyer sur votre vault et valider. Après quelques dizaines de secondes, le montant de votre vault et votre balance vont se mettre à jour et le transfert sera effectif.</p>
-<p><img src="./assets/add-credits.png" alt="Add credits" /></p>
-<h3 id="withdraw"><a class="header" href="#withdraw">Withdraw</a></h3>
-<p>Vous pouvez également withdraw des XTZ de votre vault. Pour cela, sur la page <code>My credits</code>, renseigner le nombre de XTZ que vous voulez withdraw et valider.
-Vous allez devoir signer la transaction avec votre wallet pour que nous nous assurons que les credits vont à la bonne adresse.</p>
-<h3 id="test"><a class="header" href="#test">Test</a></h3>
-<p>Une fois le contrat ajouté et les crédits transférés sur votre vault, vous pouvez intégrer la Gas Station dans votre dApps en suivant ce <a href="./LIBRARY.html">guide</a>. Vous pourrez ainsi testé la bonne intégration de la Gas Station avec votre dApps</p>
-<div style="break-before: page; page-break-before: always;"></div><h2 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h2>
+                        <h2 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h2>
 <p>Afin de faciliter l'expérience utilisateur, nous avons developpé deux SDKs (pour le moment) à intégrer dans vos webapps.
 Ils permettront d'interagir avec la Gas Station facilement.
 Pour le moment nous avons développé un SDK pour Typescript et un SDK pour Unity.</p>
@@ -249,7 +224,7 @@ Cette méthode prend en paramètre un objet de type</li>
 };
 </code></pre>
 <p>et retourne une opération de type <code>TransferParams</code>.</p>
-<h4 id="usage-1"><a class="header" href="#usage-1">Usage</a></h4>
+<h4 id="usage"><a class="header" href="#usage">Usage</a></h4>
 <p>Pour commencer, il faut importer et initialiser l'objet <code>GasStation</code> du SDK :</p>
 <pre><code class="language-ts">import { GasStation } from '@marigold-dev/gas-station-lib'
 
@@ -272,140 +247,18 @@ const gasApi = new GasStation({
 </code></pre>
 <h3 id="unity"><a class="header" href="#unity">Unity</a></h3>
 <p>🚧 Work in Progress 🚧</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="gas-station-api"><a class="header" href="#gas-station-api">Gas Station API</a></h1>
-<h2 id="endpoints-disponibles"><a class="header" href="#endpoints-disponibles">Endpoints disponibles</a></h2>
-<p>La liste des endpoints disponibles sur notre API est consultable <a href="https://gas-station-api.marigold.dev/docs">ici</a></p>
-<p>En voici un aperçu :
-<img src="./assets/api.png" alt="API" /></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
-<p>Pour comprendre le potentiel et comment utiliser la Gas Station, nous allons reprendre l'exemple simple des NFT disponible à cette adresse : https://gas-station-nft-example.marigold.dev</p>
-<h2 id="template"><a class="header" href="#template">Template</a></h2>
-<p>La première chose à faire est de récupérer le template de code situé <a href="https://github.com/marigold-dev/gas-station-lib">ici</a>.
-Une fois récupéré, vous pouvez run ces commandes :</p>
-<pre><code>npm install
-npm run check
-</code></pre>
-<p>Pour tester que tout se lance correctement, vous pouvez utilise</p>
-<pre><code>npm run dev
-</code></pre>
-<p>Les fichiers qui vont nous intéressés se situent dans <code>src/lib</code>. Vous allez y trouver des composants en Svelte et un fichier <code>tezos.ts</code> qui regroupe des fonctions utilitaires comme la connexion au wallet, etc...</p>
-<h2 id="minting"><a class="header" href="#minting">Minting</a></h2>
-<p>Nous allons commencer par le mint d'un NFT par un utilisateur. Le contrat que nous allons utiliser est disponible à cette adresse sur Ghostnet : <code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code>
-Le but ici est que l'utilisateur initie l'action de mint et puisse récupérer son NFT sans avoir à payer les frais de gas.
-Pour cela nous allons utiliser le SDK Typescript dont vous pouvez retrouver les informations <a href="./LIBRARY.html">ici</a></p>
-<p>D'abord nous allons initialiser le SDK GasStation comme suit:</p>
-<pre><code class="language-ts">const gasStationAPI = new GasStation({
-  apiURL: PUBLIC_GAS_STATION_API
-})
-</code></pre>
-<p>:info: <code>PUBLIC_GAS_STATION_API</code> est une variable d'environnement disponible dans le fichier <code>.env</code></p>
-<p>Ensuite nous allons récupérer une instance de notre contrat, à l'aide de <a href="taquito">Taquito</a>.</p>
-<pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT);
-</code></pre>
-<p>:info: L'instance <code>Tezos</code> de Taquito est déjà initialisé dans le fichier <code>tezos.ts</code>, on peut donc directement l'importer.
-:info: <code>PUBLIC_PERMIT</code> est également une variable d'environnement qui correspond à l'adresse de votre contrat de NFT</p>
-<p>Après cela nous allons forger notre opération à envoyer à la Gas Station</p>
-<pre><code class="language-ts">const mint_op = await contract.methodsObject.mint_token([{
-              owner: user_address,
-              token_id: 0, //TODO : Make the possibility to change token_id
-              amount_: 1
-          }]).toTransferParams()
-</code></pre>
-<p>A l'aide de Taquito, nous forgeons une opération de transfert sur l'entrypoint <code>mint_token</code>.
-Les paramètres de cet entrypoint sont :</p>
-<ul>
-<li><code>owner</code> : le futur propriétaire du NFT</li>
-<li><code>token_id</code> : l'ID du token (NFT) que nous allons minté (sur le contrat pointé au dessus, il y en a 6 disponibles)</li>
-<li><code>amount_</code> : la quantité de tokens que nous voulons minté. Ici 1 seul est déjà suffisant.</li>
-</ul>
-<p>Enfin, une fois l'opération forgée, nous pouvons l'envoyer à l'API de la Gas Station :</p>
-<pre><code class="language-ts">const response = await gasStationAPI.postOperation(user_address, {
-            destination: mint_op.to,
-            parameters: mint_op.parameter
-          });
-</code></pre>
-<p>L'opération va mettre quelques secondes à être traitée par la Gas Station (généralement 12/15 secondes) si tout va bien. Si une erreur s'est produite (fonds insuffisants, problème d'autorisation pour mint le NFT...), un code d'erreur sera renvoyé, que vous pourrez traiter dans votre dApp pour informer l'utilisateur.</p>
-<h2 id="staking"><a class="header" href="#staking">Staking</a></h2>
-<p>Pour le staking, nous avons besoin d'un permis. En effet, le staking consiste à transférer notre NFT fraîchement minté vers le contrat. Comme le NFT nous appartient, il convient de signer un permis (une autorisation) pour pouvoir effectuer ce transfert.</p>
-<p>Pour faciliter le développement de cette nouvelle feature, nous allons également utiliser le SDK Typescript (pour rappel, vous avez toutes les informations <a href="./LIBRARY.html">ici</a>)</p>
-<p>Pour commencer, nous allons initialiser les classes <code>GasStation</code> et <code>PermitContract</code> du SDK :</p>
-<pre><code class="language-ts">const gasStationApi = new GasStation({
-        apiURL: PUBLIC_GAS_STATION_API
-      });
-const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
-</code></pre>
-<p>Maintenant nous pouvons générer notre permis à l'aide de la méthode <code>generatePermit</code> :</p>
-<pre><code class="language-ts">const permit_data = await permit_contract.generatePermit({
-        from_: user_address,
-        txs: [{
-          to_: PUBLIC_STAKING_CONTRACT,
-          token_id,
-          amount: 1
-        }]
-      });
-</code></pre>
-<p>Quelques explications :</p>
-<ul>
-<li>La variable <code>PUBLIC_STAKING_CONTRACT</code> contient l'adresse du contrat de staking (disponible à cette adresse <code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code> sur Ghostnet)</li>
-<li>Le <code>token_id</code> correspond à l'ID du token que vous voulez stake</li>
-</ul>
-<p><code>permit_data</code> contient alors le hash du permis <code>bytes</code> et le hash de l'opération de transfert <code>transfer_hash</code></p>
-<pre><code class="language-ts">{
-    bytes: string;
-    transfer_hash: string;
-}
-</code></pre>
-<p>On doit ensuite faire signer ce permis par l'utilisateur propriétaire du token et récupérer cette signature.</p>
-<p>Cela se fait facilement à l'aide de Taquito :</p>
-<pre><code class="language-ts">const signature = (await (await wallet.client).requestSignPayload({
-          signingType: SigningType.MICHELINE,
-          payload: permit_data.bytes
-      })).signature;
-</code></pre>
-<p>Une fois que nous avons le permis signé, nous pouvons l'enregistrer auprès du contrat qui implémente l'entrypoint <code>permit</code>.</p>
-<p>On va encore pouvoir utiliser le SDK pour faire cela :</p>
-<pre><code class="language-ts">const permit_op = await permit_contract.permitCall({
-          publicKey: activeAccount.publicKey,
-          signature: signature,
-          transferHash: permit_data.transfer_hash
-      });
-</code></pre>
-<ul>
-<li>publicKey est la clé publique du propriétaire du token</li>
-<li>signature est la signature du permis récupérée à l'étape précédente</li>
-<li>transferHash est le hash de l'opération de transfert renvoyé lors de la création du permis</li>
-</ul>
-<p>A ce stade, nous avons toutes les informations nécessaires concernant le permis. Nous allons maintenant pouvoir forgé l'opération de staking à proprement parler et envoyer le tout à la Gas Station.</p>
-<p>Pour forger l'opération de staking, on fait comme d'habitude, on récupère l'instance du contrat à l'aide de Taquito et l'on craft l'opération pour récupérer les paramètres.</p>
-<pre><code class="language-ts">const staking_contract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
-const staking_op = await staking_contract.methods.stake(
-        1,
-        user_address
-      ).toTransferParams();
-</code></pre>
-<p>:info: <code>PUBLIC_STAKING_CONTRACT</code> est une variable d'environnement contenant l'adresse du contrat implémentant l'entrypoint de staking</p>
-<p>Il ne nous reste plus qu'à envoyer l'opération à la Gas Station afin que les frais de gas soient payés :</p>
-<pre><code class="language-ts">const response = await gas_api.postOperations(user_address,
-          [
-            {
-              destination: permit_op.to,
-              parameters: permit_op.parameter
-            },
-            {
-              destination: staking_op.to,
-              parameters: staking_op.parameter
-            }
-          ]);
-</code></pre>
-<p>Ici on utilise <code>postOperations</code> pour poster un batch d'opérations. Ce batch contient l'opération pour enregistrer le permis et l'opération de staking.
-Lorsque l'on appelera l'entrypoint <code>stake</code> du contrat de staking, le permis sera revélé et consommé.</p>
-<p>Comme pour l'opération de mint, la Gas Station répondra en qq dizaines de secondes.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="WEBAPP.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="API.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -413,7 +266,13 @@ Lorsque l'on appelera l'entrypoint <code>stake</code> du contrat de staking, le 
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="WEBAPP.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="API.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
@@ -436,11 +295,6 @@ Lorsque l'on appelera l'entrypoint <code>stake</code> du contrat de staking, le 
 
         <!-- Custom JS scripts -->
 
-        <script>
-        window.addEventListener('load', function() {
-            window.setTimeout(window.print, 100);
-        });
-        </script>
 
     </div>
     </body>

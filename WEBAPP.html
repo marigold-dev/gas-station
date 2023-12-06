@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - book</title>
-        <base href="/">
+        <title>Gas Station Webapp - book</title>
 
 
         <!-- Custom HTML head -->
@@ -89,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="WELCOME.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="WEBAPP.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="LIBRARY.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="API.html">API</a></li><li class="chapter-item expanded affix "><a href="TUTORIAL.html">Tutorial</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="WELCOME.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="WEBAPP.html" class="active">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="LIBRARY.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="API.html">API</a></li><li class="chapter-item expanded affix "><a href="TUTORIAL.html">Tutorial</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -174,14 +173,41 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="gas-station-webapp"><a class="header" href="#gas-station-webapp">Gas Station Webapp</a></h1>
+<p>Pour faciliter l'expérience utilisateur avec la Gas Station et notamment l'interaction avec les contrats et le management du budget pour payer les fees, nous avons développer une webapp, disponible <a href="https://gas-station.marigold.dev/">ici</a>.</p>
+<p>⚠️ Note : disponible seulement sur Ghostnet pour le moment ⚠️</p>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<h3 id="wallet-connexion"><a class="header" href="#wallet-connexion">Wallet connexion</a></h3>
+<p>Comme toutes les dApps, une des premières choses à faire est de connecter votre wallet en cliquant sur le bouton en haut à droite.</p>
+<p><img src="./assets/wallet_connection.png" alt="Wallet connection" /></p>
+<h3 id="your-contracts"><a class="header" href="#your-contracts">Your contracts</a></h3>
+<p>Sur la homepage vous pourrez retrouver tous vos contracts enregistrés sur la Gas Station ainsi que leurs entrypoints activés.</p>
+<p><img src="./assets/homepage.png" alt="Homepage" /></p>
+<h3 id="add-a-new-contract"><a class="header" href="#add-a-new-contract">Add a new contract</a></h3>
+<p>Pour ajouter un nouveau contract, cliquer sur <code>Add contract</code> et remplissez les informations demandées.
+Remplissez en premier l'adresse du contrat afin de récupérer les entrypoints associés à votre contrat.
+Donnez ensuite un nom et activer les entrypoints pour lesquels vous voulez payer les fees.</p>
+<p><img src="./assets/add-contract.png" alt="Add contract" /></p>
+<h3 id="add-credits-on-your-vault"><a class="header" href="#add-credits-on-your-vault">Add credits on your vault</a></h3>
+<p>Pour ajouter des crédits dans votre vault, aller sur la page <code>My credits</code>. Renseignez ensuite le nombre de XTZ que vous voulez envoyer sur votre vault et valider. Après quelques dizaines de secondes, le montant de votre vault et votre balance vont se mettre à jour et le transfert sera effectif.</p>
+<p><img src="./assets/add-credits.png" alt="Add credits" /></p>
+<h3 id="withdraw"><a class="header" href="#withdraw">Withdraw</a></h3>
+<p>Vous pouvez également withdraw des XTZ de votre vault. Pour cela, sur la page <code>My credits</code>, renseigner le nombre de XTZ que vous voulez withdraw et valider.
+Vous allez devoir signer la transaction avec votre wallet pour que nous nous assurons que les credits vont à la bonne adresse.</p>
+<h3 id="test"><a class="header" href="#test">Test</a></h3>
+<p>Une fois le contrat ajouté et les crédits transférés sur votre vault, vous pouvez intégrer la Gas Station dans votre dApps en suivant ce <a href="./LIBRARY.html">guide</a>. Vous pourrez ainsi testé la bonne intégration de la Gas Station avec votre dApps</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="WELCOME.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
+                            <a rel="next prefetch" href="LIBRARY.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -189,7 +215,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="WELCOME.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
+                    <a rel="next prefetch" href="LIBRARY.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>
