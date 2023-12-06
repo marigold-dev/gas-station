@@ -41,4 +41,4 @@ Vous allez devoir signer la transaction avec votre wallet pour que nous nous ass
 
 ### Test
 
-Une fois le contrat ajouté et les crédits transférés sur votre vault, vous pouvez intégrer la Gas Station dans votre dApps en suivant ce [guide](./WELCOME.md). Vous pourrez ainsi testé la bonne intégration de la Gas Station avec votre dApps
+Une fois le contrat ajouté et les crédits transférés sur votre vault, vous pouvez intégrer la Gas Station dans votre dApps en suivant ce [guide](./LIBRARY.md). Vous pourrez ainsi testé la bonne intégration de la Gas Station avec votre dApps

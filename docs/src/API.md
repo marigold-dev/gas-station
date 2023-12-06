@@ -1,8 +1,8 @@
 # Gas Station API
 
-
 ## Endpoints disponibles
 
-https://gas-station-api.marigold.dev/docs
+La liste des endpoints disponibles sur notre API est consultable [ici](https://gas-station-api.marigold.dev/docs)
 
+En voici un aperçu :
 ![API](./assets/api.png)
