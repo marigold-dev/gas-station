@@ -1,44 +1,41 @@
 # Gas Station Webapp
 
-Pour faciliter l'expérience utilisateur avec la Gas Station et notamment l'interaction avec les contrats et le management du budget pour payer les fees, nous avons développer une webapp, disponible [ici](https://gas-station.marigold.dev/).
+To enhance the user experience with the Gas Station, particularly in interacting with contracts and managing the budget for fee payments, we have developed a web app, available [here](https://ghostnet.gas-station.marigold.dev/).
 
-⚠️ Note : disponible seulement sur Ghostnet pour le moment ⚠️
+⚠️ Note: currently available only on Ghostnet ⚠️
 
 ## Usage
 
-### Wallet connexion
+### Wallet connection
 
-Comme toutes les dApps, une des premières choses à faire est de connecter votre wallet en cliquant sur le bouton en haut à droite.
+Like all dApps, one of the first things to do is connect your wallet by clicking on the button in the top right corner.
 
 ![Wallet connection](./assets/wallet_connection.png)
 
 ### Your contracts
 
-Sur la homepage vous pourrez retrouver tous vos contracts enregistrés sur la Gas Station ainsi que leurs entrypoints activés.
+On the homepage, you can find all your contracts registered on the Gas Station along with their activated entrypoints.
 
 ![Homepage](./assets/homepage.png)
 
 ### Add a new contract
 
-Pour ajouter un nouveau contract, cliquer sur `Add contract` et remplissez les informations demandées.
-Remplissez en premier l'adresse du contrat afin de récupérer les entrypoints associés à votre contrat.
-Donnez ensuite un nom et activer les entrypoints pour lesquels vous voulez payer les fees.
+To add a new contract, click on `Add contract` and fill in the required information. Start by entering the contract address to retrieve the associated entrypoints for your contract. Then, provide a name and activate the entrypoints for which you want to sponsor.
 
 ![Add contract](./assets/add-contract.png)
 
-### Add credits on your vault
+### Add credits to your vault
 
-Pour ajouter des crédits dans votre vault, aller sur la page `My credits`. Renseignez ensuite le nombre de XTZ que vous voulez envoyer sur votre vault et valider. Après quelques dizaines de secondes, le montant de votre vault et votre balance vont se mettre à jour et le transfert sera effectif.
+To add credits to your vault, go to the `My credits` page. Enter the amount of XTZ you want to send to your vault and confirm. After a few seconds, your vault balance and overall balance will update, and the transfer will be effective.
 
 ![Add credits](./assets/add-credits.png)
 
 
 ### Withdraw
 
-Vous pouvez également withdraw des XTZ de votre vault. Pour cela, sur la page `My credits`, renseigner le nombre de XTZ que vous voulez withdraw et valider.
-Vous allez devoir signer la transaction avec votre wallet pour que nous nous assurons que les credits vont à la bonne adresse.
+You can also withdraw XTZ from your vault. On the `My credits` page, enter the amount of XTZ you want to withdraw and confirm. You'll need to sign the transaction with your wallet to ensure that the credits go to the correct address.
 
 
 ### Test
 
-Une fois le contrat ajouté et les crédits transférés sur votre vault, vous pouvez intégrer la Gas Station dans votre dApps en suivant ce [guide](./LIBRARY.md). Vous pourrez ainsi testé la bonne intégration de la Gas Station avec votre dApps
+Once the contract is added and credits are transferred to your vault, you can integrate the Gas Station into your dApps by following this [guide](./TUTORIAL.md). This will allow you to test the seamless integration of the Gas Station with your dApps.

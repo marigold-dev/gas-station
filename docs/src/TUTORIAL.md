@@ -1,59 +1,59 @@
 # Tutorial
 
-Pour comprendre le potentiel et comment utiliser la Gas Station, nous allons reprendre l'exemple simple des NFT disponible à cette adresse : https://gas-station-nft-example.marigold.dev
+To understand the potential and how to use the Gas Station, let's walk through the simple example of NFTs available at this [address](https://ghostnet.gas-station-nft-example.marigold.dev).
 
 ## Template
 
-La première chose à faire est de récupérer le template de code situé [ici](https://github.com/marigold-dev/gas-station-lib).
-Une fois récupéré, vous pouvez run ces commandes :
+The first step is to retrieve the code template located [here](https://github.com/marigold-dev/gas-station-lib).
+Once retrieved, you can run the following commands:
 ```
 npm install
 npm run check
 ```
-Pour tester que tout se lance correctement, vous pouvez utilise
+To test that everything works well, you can use:
 ```
 npm run dev
 ```
 
-Les fichiers qui vont nous intéressés se situent dans `src/lib`. Vous allez y trouver des composants en Svelte et un fichier `tezos.ts` qui regroupe des fonctions utilitaires comme la connexion au wallet, etc...
+The files of interest are located in `src/lib`. You will find Svelte components and a `tezos.ts` file that contains utility functions such as wallet connection, etc.
 
 ## Minting
 
-Nous allons commencer par le mint d'un NFT par un utilisateur. Le contrat que nous allons utiliser est disponible à cette adresse sur Ghostnet : `KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx`
-Le but ici est que l'utilisateur initie l'action de mint et puisse récupérer son NFT sans avoir à payer les frais de gas.
-Pour cela nous allons utiliser le SDK Typescript dont vous pouvez retrouver les informations [ici](./LIBRARY.md)
+We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: `KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx`.
+The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information [here](./LIBRARY.md).
 
-D'abord nous allons initialiser le SDK GasStation comme suit:
+First, we'll setup the GasStation SDK as follows:
 ```ts
 const gasStationAPI = new GasStation({
   apiURL: PUBLIC_GAS_STATION_API
 })
 ```
-:info: `PUBLIC_GAS_STATION_API` est une variable d'environnement disponible dans le fichier `.env`
+ℹ️ `PUBLIC_GAS_STATION_API` est une variable d'environnement disponible dans le fichier `.env`
 
-Ensuite nous allons récupérer une instance de notre contrat, à l'aide de [Taquito](taquito).
+Next, we'll retrieve an instance of our contract, using [Taquito](https://tezostaquito.io/).
 ```ts
 const contract = await Tezos.wallet.at(PUBLIC_PERMIT);
 ```
-:info: L'instance `Tezos` de Taquito est déjà initialisé dans le fichier `tezos.ts`, on peut donc directement l'importer.
-:info: `PUBLIC_PERMIT` est également une variable d'environnement qui correspond à l'adresse de votre contrat de NFT
+ℹ️ The `Tezos` instance of Taquito is already initialized in the `tezos.ts` file, so it can be directly imported.
 
-Après cela nous allons forger notre opération à envoyer à la Gas Station
+ℹ️ `PUBLIC_PERMIT` is also an environment variable corresponding to the address of your NFT contract.
+
+Afterward, we will forge our operation to send to the Gas Station:
 ```ts
 const mint_op = await contract.methodsObject.mint_token([{
               owner: user_address,
-              token_id: 0, //TODO : Make the possibility to change token_id
+              token_id: 0,
               amount_: 1
           }]).toTransferParams()
 ```
 
-A l'aide de Taquito, nous forgeons une opération de transfert sur l'entrypoint `mint_token`.
-Les paramètres de cet entrypoint sont :
-- `owner` : le futur propriétaire du NFT
-- `token_id` : l'ID du token (NFT) que nous allons minté (sur le contrat pointé au dessus, il y en a 6 disponibles)
-- `amount_` : la quantité de tokens que nous voulons minté. Ici 1 seul est déjà suffisant.
+Using Taquito, we forge a transfer operation on the `mint_token` entrypoint.
+The parameters for this entrypoint are:
+- `owner` : the future owner of the NFT
+- `token_id` : l'ID of the token (NFT) that we are going to mint
+- `amount_` : the quantity of tokens we want to mint.
 
-Enfin, une fois l'opération forgée, nous pouvons l'envoyer à l'API de la Gas Station :
+Finally, once the operation is forged, we can send it to the Gas Station API:
 ```ts
 const response = await gasStationAPI.postOperation(user_address, {
             destination: mint_op.to,
@@ -61,16 +61,17 @@ const response = await gasStationAPI.postOperation(user_address, {
           });
 ```
 
-L'opération va mettre quelques secondes à être traitée par la Gas Station (généralement 12/15 secondes) si tout va bien. Si une erreur s'est produite (fonds insuffisants, problème d'autorisation pour mint le NFT...), un code d'erreur sera renvoyé, que vous pourrez traiter dans votre dApp pour informer l'utilisateur.
+The operation will take a few seconds to be processed by the Gas Station (usually 12/15 seconds) if everything is correct.
+If an error occurs (insufficient funds, authorization issue for minting the NFT, etc.), an error code will be returned, which you can handle in your dApp to inform the user.
 
 
 ## Staking
 
-Pour le staking, nous avons besoin d'un permis. En effet, le staking consiste à transférer notre NFT fraîchement minté vers le contrat. Comme le NFT nous appartient, il convient de signer un permis (une autorisation) pour pouvoir effectuer ce transfert.
+For staking, we need a permit. Staking involves transferring our freshly minted NFT to the contract. As we own the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.
 
-Pour faciliter le développement de cette nouvelle feature, nous allons également utiliser le SDK Typescript (pour rappel, vous avez toutes les informations [ici](./LIBRARY.md))
+To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information [here](./LIBRARY.md))
 
-Pour commencer, nous allons initialiser les classes `GasStation` et `PermitContract` du SDK :
+To start, let's initialize the `GasStation` and `PermitContract`  classes from the SDK:
 ```ts
 const gasStationApi = new GasStation({
         apiURL: PUBLIC_GAS_STATION_API
@@ -78,7 +79,7 @@ const gasStationApi = new GasStation({
 const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
 ```
 
-Maintenant nous pouvons générer notre permis à l'aide de la méthode `generatePermit` :
+Now we can generate our permit using the `generatePermit` method:
 ```ts
 const permit_data = await permit_contract.generatePermit({
         from_: user_address,
@@ -89,11 +90,11 @@ const permit_data = await permit_contract.generatePermit({
         }]
       });
 ```
-Quelques explications :
-- La variable `PUBLIC_STAKING_CONTRACT` contient l'adresse du contrat de staking (disponible à cette adresse `KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu` sur Ghostnet)
-- Le `token_id` correspond à l'ID du token que vous voulez stake
+Some explanations:
+- The variable `PUBLIC_STAKING_CONTRACT` contains the address of the staking contract (available at this address `KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu` on Ghostnet).
+- The `token_id` corresponds to the ID of the token you want to stake.
 
-`permit_data` contient alors le hash du permis `bytes` et le hash de l'opération de transfert `transfer_hash`
+`permit_data` then contains the hash of the permit `bytes` and the hash of transfer operation `transfer_hash`:
 ```ts
 {
     bytes: string;
@@ -101,9 +102,9 @@ Quelques explications :
 }
 ```
 
-On doit ensuite faire signer ce permis par l'utilisateur propriétaire du token et récupérer cette signature.
+Next, we need to have the owner of the token sign this permit and retrieve the signature.
 
-Cela se fait facilement à l'aide de Taquito :
+This is easily done using Taquito:
 ```ts
 const signature = (await (await wallet.client).requestSignPayload({
           signingType: SigningType.MICHELINE,
@@ -111,9 +112,9 @@ const signature = (await (await wallet.client).requestSignPayload({
       })).signature;
 ```
 
-Une fois que nous avons le permis signé, nous pouvons l'enregistrer auprès du contrat qui implémente l'entrypoint `permit`.
+Once we have the signed permit, we can register it with the contract that implements the `permit` entrypoint.
 
-On va encore pouvoir utiliser le SDK pour faire cela :
+Again, we can use the SDK for this:
 ```ts
 const permit_op = await permit_contract.permitCall({
           publicKey: activeAccount.publicKey,
@@ -122,14 +123,14 @@ const permit_op = await permit_contract.permitCall({
       });
 ```
 
-- publicKey est la clé publique du propriétaire du token
-- signature est la signature du permis récupérée à l'étape précédente
-- transferHash est le hash de l'opération de transfert renvoyé lors de la création du permis
+- `publicKey` is the public key of the token's owner
+- `signature` is the signature of the permit obtained in the previous step
+- `transferHash` is the hash of the transfer operation returned during the permit creation
 
 
-A ce stade, nous avons toutes les informations nécessaires concernant le permis. Nous allons maintenant pouvoir forgé l'opération de staking à proprement parler et envoyer le tout à la Gas Station.
+At this point, we have all the necessary information regarding the permit. Now, we can forge the staking operation itself and send everything to the Gas Station.
 
-Pour forger l'opération de staking, on fait comme d'habitude, on récupère l'instance du contrat à l'aide de Taquito et l'on craft l'opération pour récupérer les paramètres.
+To forge the staking operation, we follow the usual process: we retrieve the contract instance using Taquito and craft the operation to get the parameters.
 
 ```ts
 const staking_contract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
@@ -138,9 +139,9 @@ const staking_op = await staking_contract.methods.stake(
         user_address
       ).toTransferParams();
 ```
-:info: `PUBLIC_STAKING_CONTRACT` est une variable d'environnement contenant l'adresse du contrat implémentant l'entrypoint de staking
+ℹ️ `PUBLIC_STAKING_CONTRACT` is an environment variable containing the contract's address implementing the staking contract.
 
-Il ne nous reste plus qu'à envoyer l'opération à la Gas Station afin que les frais de gas soient payés :
+All that remains is to send the operation to the Gas Station to have the gas fees covered:
 
 ```ts
 const response = await gas_api.postOperations(user_address,
@@ -156,7 +157,6 @@ const response = await gas_api.postOperations(user_address,
           ]);
 ```
 
-Ici on utilise `postOperations` pour poster un batch d'opérations. Ce batch contient l'opération pour enregistrer le permis et l'opération de staking.
-Lorsque l'on appelera l'entrypoint `stake` du contrat de staking, le permis sera revélé et consommé.
+Here, we use `postOperations` to submit a batch of operations. This batch contains the operation to register the permit and the staking operation. When calling the staking contract's `stake` entrypoint, the permit will be revealed and consumed.
 
-Comme pour l'opération de mint, la Gas Station répondra en qq dizaines de secondes.
+Similar to the minting operation, the Gas Station will respond in a few tens of seconds.
