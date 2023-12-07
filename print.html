@@ -176,71 +176,66 @@
                     <main>
                         <h1 id="welcome"><a class="header" href="#welcome">Welcome</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gas-station-webapp"><a class="header" href="#gas-station-webapp">Gas Station Webapp</a></h1>
-<p>Pour faciliter l'expérience utilisateur avec la Gas Station et notamment l'interaction avec les contrats et le management du budget pour payer les fees, nous avons développer une webapp, disponible <a href="https://gas-station.marigold.dev/">ici</a>.</p>
-<p>⚠️ Note : disponible seulement sur Ghostnet pour le moment ⚠️</p>
+<p>To enhance the user experience with the Gas Station, particularly in interacting with contracts and managing the budget for fee payments, we have developed a web app, available <a href="https://ghostnet.gas-station.marigold.dev/">here</a>.</p>
+<p>⚠️ Note: currently available only on Ghostnet ⚠️</p>
 <h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
-<h3 id="wallet-connexion"><a class="header" href="#wallet-connexion">Wallet connexion</a></h3>
-<p>Comme toutes les dApps, une des premières choses à faire est de connecter votre wallet en cliquant sur le bouton en haut à droite.</p>
+<h3 id="wallet-connection"><a class="header" href="#wallet-connection">Wallet connection</a></h3>
+<p>Like all dApps, one of the first things to do is connect your wallet by clicking on the button in the top right corner.</p>
 <p><img src="./assets/wallet_connection.png" alt="Wallet connection" /></p>
 <h3 id="your-contracts"><a class="header" href="#your-contracts">Your contracts</a></h3>
-<p>Sur la homepage vous pourrez retrouver tous vos contracts enregistrés sur la Gas Station ainsi que leurs entrypoints activés.</p>
+<p>On the homepage, you can find all your contracts registered on the Gas Station along with their activated entrypoints.</p>
 <p><img src="./assets/homepage.png" alt="Homepage" /></p>
 <h3 id="add-a-new-contract"><a class="header" href="#add-a-new-contract">Add a new contract</a></h3>
-<p>Pour ajouter un nouveau contract, cliquer sur <code>Add contract</code> et remplissez les informations demandées.
-Remplissez en premier l'adresse du contrat afin de récupérer les entrypoints associés à votre contrat.
-Donnez ensuite un nom et activer les entrypoints pour lesquels vous voulez payer les fees.</p>
+<p>To add a new contract, click on <code>Add contract</code> and fill in the required information. Start by entering the contract address to retrieve the associated entrypoints for your contract. Then, provide a name and activate the entrypoints for which you want to sponsor.</p>
 <p><img src="./assets/add-contract.png" alt="Add contract" /></p>
-<h3 id="add-credits-on-your-vault"><a class="header" href="#add-credits-on-your-vault">Add credits on your vault</a></h3>
-<p>Pour ajouter des crédits dans votre vault, aller sur la page <code>My credits</code>. Renseignez ensuite le nombre de XTZ que vous voulez envoyer sur votre vault et valider. Après quelques dizaines de secondes, le montant de votre vault et votre balance vont se mettre à jour et le transfert sera effectif.</p>
+<h3 id="add-credits-to-your-vault"><a class="header" href="#add-credits-to-your-vault">Add credits to your vault</a></h3>
+<p>To add credits to your vault, go to the <code>My credits</code> page. Enter the amount of XTZ you want to send to your vault and confirm. After a few seconds, your vault balance and overall balance will update, and the transfer will be effective.</p>
 <p><img src="./assets/add-credits.png" alt="Add credits" /></p>
 <h3 id="withdraw"><a class="header" href="#withdraw">Withdraw</a></h3>
-<p>Vous pouvez également withdraw des XTZ de votre vault. Pour cela, sur la page <code>My credits</code>, renseigner le nombre de XTZ que vous voulez withdraw et valider.
-Vous allez devoir signer la transaction avec votre wallet pour que nous nous assurons que les credits vont à la bonne adresse.</p>
+<p>You can also withdraw XTZ from your vault. On the <code>My credits</code> page, enter the amount of XTZ you want to withdraw and confirm. You'll need to sign the transaction with your wallet to ensure that the credits go to the correct address.</p>
 <h3 id="test"><a class="header" href="#test">Test</a></h3>
-<p>Une fois le contrat ajouté et les crédits transférés sur votre vault, vous pouvez intégrer la Gas Station dans votre dApps en suivant ce <a href="./LIBRARY.html">guide</a>. Vous pourrez ainsi testé la bonne intégration de la Gas Station avec votre dApps</p>
-<div style="break-before: page; page-break-before: always;"></div><h2 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h2>
-<p>Afin de faciliter l'expérience utilisateur, nous avons developpé deux SDKs (pour le moment) à intégrer dans vos webapps.
-Ils permettront d'interagir avec la Gas Station facilement.
-Pour le moment nous avons développé un SDK pour Typescript et un SDK pour Unity.</p>
+<p>Once the contract is added and credits are transferred to your vault, you can integrate the Gas Station into your dApps by following this <a href="./TUTORIAL.html">guide</a>. This will allow you to test the seamless integration of the Gas Station with your dApps.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sdks"><a class="header" href="#sdks">SDKs</a></h1>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h2>
+<p>To enhance the user experience, we have developed two SDKs (for now) to integrate into your web applications. They will facilitate easy interaction with the Gas Station. Currently, we have developed an SDK for Typescript and another one for Unity.</p>
 <h3 id="typescript"><a class="header" href="#typescript">Typescript</a></h3>
 <h4 id="installation"><a class="header" href="#installation">Installation</a></h4>
-<p>Pour installer le SDK Typescript, il faut executer :</p>
+<p>To install the Typescript SDK, run :</p>
 <pre><code class="language-bash">npm install --save @marigold-dev/gas-station-lib
 </code></pre>
 <h4 id="explanations"><a class="header" href="#explanations">Explanations</a></h4>
-<p>Le SDK est composé de deux classes : <code>GasStation</code> et <code>PermitContract</code>.</p>
-<p>La classe <code>GasStation</code> permet de communiquer facilement avec l'API de la Gas Station, sans avoir à initiliaser soit-même la requete HTTP.</p>
-<p>Pour initialiser cette classe, il faut lui donner une URL d'API de Gas Station. Pour le moment, vous pouvez donner <code>https://gas-station-api.marigold.dev/operation</code>.</p>
-<p>La classe possède deux méthodes :</p>
+<p>The SDK consists of two classes : <code>GasStation</code> and <code>PermitContract</code>.</p>
+<p>The <code>GasStation</code> class enables easy communication with the Gas Station API without the need to manually initialize the HTTP request.</p>
+<p>To initialize this class, you need to provide it with a Gas Station API URL. For now, you can use <code>https://gas-station-api.marigold.dev/operation</code>.</p>
+<p>The class has two methods:</p>
 <ul>
-<li><code>postOperation</code> prend en paramètre un <code>sender</code> (généralement l'adresse de l'utilisateur) et une <code>operation</code> de type</li>
+<li><code>postOperation</code> takes a <code>sender</code> parameter (usually the user's address) and an <code>operation</code> of the following type:</li>
 </ul>
 <pre><code class="language-ts">export type Operation = {
   destination: string;
   parameters: unknown;
 };
 </code></pre>
-<p>Cette méthode va ensuite préparer la requête HTTP et l'envoyer sur le endpoint <code>/operation</code> de l'API, qui traiter l'operation.</p>
+<p>This method then prepares the HTTP request and sends it to the <code>/operation</code> endpoint of the API, which processes the operation.</p>
 <ul>
-<li><code>postOperations</code> prend également un <code>sender</code> et un tableau d' <code>Operation</code> et permet d'envoyer plusieurs opérations à la fois.</li>
+<li><code>postOperations</code> also takes a <code>sender</code> and an array of <code>Operation</code>, allowing you to send multiple operations at once.</li>
 </ul>
-<p>La classe <code>PermitContract</code> permet de générer un permit <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a> pour un contrat donné.</p>
+<p>The <code>PermitContract</code> class allows the generation of a permit <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a> for a given contract.</p>
 <blockquote>
-<p>Un permis est une autorisation à appeler un endpoint spécifique d'un smart contrat avec un paramètre spécifié pour le compte d'une adresse donnée. Cette autorisation peut éventuellement expirer. Il est notamment utile pour la manipulation de tokens FA lorsque c'est l'utilisateur qui a le ownership (transfer, update_operation, approve)</p>
+<p>A permit is an authorization to call a specific endpoint of a smart contract with a specified parameter on behalf of a given address. This authorization may have an expiration. It is particularly useful for handling FA tokens when the user has ownership (transfer, update_operation, approve).</p>
 </blockquote>
-<p>Cette classe a deux méthodes :</p>
+<p>This class has two methods:</p>
 <ul>
-<li><code>generatePermit</code> permet de créer un permis à partir d'une operation de transfert. Elle retourne un objet contenant</li>
+<li><code>generatePermit</code> creates a permit from a transfer operation. It returns an object containing:</li>
 </ul>
 <pre><code class="language-ts">{
   bytes: string, // les bytes contenant le permis
   transfer_hash: string, // le hash de l'operation de transfet
 }
 </code></pre>
-<p>Suite à l'appel de <code>generatePermit</code>, vous devrez faire signer les bytes par le owner du token pour finaliser le permis.</p>
+<p>After calling <code>generatePermit</code>, you need to have the token owner sign the bytes to finalize the permit.</p>
 <ul>
-<li><code>permitCall</code> permet d'appeler l'entrypoint <code>permit</code> sur le contrat cible. Cela va permettre d'enregister le permis dans le storage du contrat (cf TZIP-17).
-Cette méthode prend en paramètre un objet de type</li>
+<li><code>permitCall</code> allows calling the <code>permit</code> entrypoint on the target contract. This registers the permit in the contract storage (refer to <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a>). This method takes an object of type:</li>
 </ul>
 <pre><code class="language-ts">type PermitOperation = {
   publicKey: string;
@@ -248,23 +243,23 @@ Cette méthode prend en paramètre un objet de type</li>
   transferHash: string;
 };
 </code></pre>
-<p>et retourne une opération de type <code>TransferParams</code>.</p>
+<p>and returns an operation of type <code>TransferParams</code>.</p>
 <h4 id="usage-1"><a class="header" href="#usage-1">Usage</a></h4>
-<p>Pour commencer, il faut importer et initialiser l'objet <code>GasStation</code> du SDK :</p>
+<p>To begin, you need to import and initialize the <code>GasStation</code> object from the SDK:</p>
 <pre><code class="language-ts">import { GasStation } from '@marigold-dev/gas-station-lib'
 
 const gasApi = new GasStation({
   apiURL: 'https://gas-station-api.marigold.dev/'
 })
 </code></pre>
-<p>Vous pouvez ensuite forger votre operation, par exemple mint un NFT (ici le contrat possède un entrypoint <code>mint_token</code>):</p>
+<p>Next, you can forge your operation, for example, to mint an NFT (assuming the contract has a <code>mint_token</code> entrypoint):</p>
 <pre><code class="language-ts">const mintOperation = await contract.methodsObject.mint_token([{
               owner: userAddress,
               token_id: tokenId,
               amount_: 1
           }]).toTransferParams()
 </code></pre>
-<p>Et enfin, vous pouvez envoyer votre operation à la Gas Station avec :</p>
+<p>Finally, you can send your operation to the Gas Station with:</p>
 <pre><code class="language-ts">const response = await gasApi.postOperation(userAddress, {
             destination: mintOperation.to,
             parameters: mintOperation.parameter
@@ -272,69 +267,66 @@ const gasApi = new GasStation({
 </code></pre>
 <h3 id="unity"><a class="header" href="#unity">Unity</a></h3>
 <p>🚧 Work in Progress 🚧</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="gas-station-api"><a class="header" href="#gas-station-api">Gas Station API</a></h1>
-<h2 id="endpoints-disponibles"><a class="header" href="#endpoints-disponibles">Endpoints disponibles</a></h2>
-<p>La liste des endpoints disponibles sur notre API est consultable <a href="https://gas-station-api.marigold.dev/docs">ici</a></p>
-<p>En voici un aperçu :
-<img src="./assets/api.png" alt="API" /></p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="api"><a class="header" href="#api">API</a></h1>
+<p>You can find API specifications <a href="https://ghostnet.gas-station-api.marigold.dev/docs">here</a></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
-<p>Pour comprendre le potentiel et comment utiliser la Gas Station, nous allons reprendre l'exemple simple des NFT disponible à cette adresse : https://gas-station-nft-example.marigold.dev</p>
+<p>To understand the potential and how to use the Gas Station, let's walk through the simple example of NFTs available at this <a href="https://ghostnet.gas-station-nft-example.marigold.dev">address</a>.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
-<p>La première chose à faire est de récupérer le template de code situé <a href="https://github.com/marigold-dev/gas-station-lib">ici</a>.
-Une fois récupéré, vous pouvez run ces commandes :</p>
+<p>The first step is to retrieve the code template located <a href="https://github.com/marigold-dev/gas-station-lib">here</a>.
+Once retrieved, you can run the following commands:</p>
 <pre><code>npm install
 npm run check
 </code></pre>
-<p>Pour tester que tout se lance correctement, vous pouvez utilise</p>
+<p>To test that everything works well, you can use:</p>
 <pre><code>npm run dev
 </code></pre>
-<p>Les fichiers qui vont nous intéressés se situent dans <code>src/lib</code>. Vous allez y trouver des composants en Svelte et un fichier <code>tezos.ts</code> qui regroupe des fonctions utilitaires comme la connexion au wallet, etc...</p>
+<p>The files of interest are located in <code>src/lib</code>. You will find Svelte components and a <code>tezos.ts</code> file that contains utility functions such as wallet connection, etc.</p>
 <h2 id="minting"><a class="header" href="#minting">Minting</a></h2>
-<p>Nous allons commencer par le mint d'un NFT par un utilisateur. Le contrat que nous allons utiliser est disponible à cette adresse sur Ghostnet : <code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code>
-Le but ici est que l'utilisateur initie l'action de mint et puisse récupérer son NFT sans avoir à payer les frais de gas.
-Pour cela nous allons utiliser le SDK Typescript dont vous pouvez retrouver les informations <a href="./LIBRARY.html">ici</a></p>
-<p>D'abord nous allons initialiser le SDK GasStation comme suit:</p>
+<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code>.
+The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information <a href="./LIBRARY.html">here</a>.</p>
+<p>First, we'll setup the GasStation SDK as follows:</p>
 <pre><code class="language-ts">const gasStationAPI = new GasStation({
   apiURL: PUBLIC_GAS_STATION_API
 })
 </code></pre>
-<p>:info: <code>PUBLIC_GAS_STATION_API</code> est une variable d'environnement disponible dans le fichier <code>.env</code></p>
-<p>Ensuite nous allons récupérer une instance de notre contrat, à l'aide de <a href="taquito">Taquito</a>.</p>
+<p>ℹ️ <code>PUBLIC_GAS_STATION_API</code> est une variable d'environnement disponible dans le fichier <code>.env</code></p>
+<p>Next, we'll retrieve an instance of our contract, using <a href="https://tezostaquito.io/">Taquito</a>.</p>
 <pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT);
 </code></pre>
-<p>:info: L'instance <code>Tezos</code> de Taquito est déjà initialisé dans le fichier <code>tezos.ts</code>, on peut donc directement l'importer.
-:info: <code>PUBLIC_PERMIT</code> est également une variable d'environnement qui correspond à l'adresse de votre contrat de NFT</p>
-<p>Après cela nous allons forger notre opération à envoyer à la Gas Station</p>
+<p>ℹ️ The <code>Tezos</code> instance of Taquito is already initialized in the <code>tezos.ts</code> file, so it can be directly imported.</p>
+<p>ℹ️ <code>PUBLIC_PERMIT</code> is also an environment variable corresponding to the address of your NFT contract.</p>
+<p>Afterward, we will forge our operation to send to the Gas Station:</p>
 <pre><code class="language-ts">const mint_op = await contract.methodsObject.mint_token([{
               owner: user_address,
-              token_id: 0, //TODO : Make the possibility to change token_id
+              token_id: 0,
               amount_: 1
           }]).toTransferParams()
 </code></pre>
-<p>A l'aide de Taquito, nous forgeons une opération de transfert sur l'entrypoint <code>mint_token</code>.
-Les paramètres de cet entrypoint sont :</p>
+<p>Using Taquito, we forge a transfer operation on the <code>mint_token</code> entrypoint.
+The parameters for this entrypoint are:</p>
 <ul>
-<li><code>owner</code> : le futur propriétaire du NFT</li>
-<li><code>token_id</code> : l'ID du token (NFT) que nous allons minté (sur le contrat pointé au dessus, il y en a 6 disponibles)</li>
-<li><code>amount_</code> : la quantité de tokens que nous voulons minté. Ici 1 seul est déjà suffisant.</li>
+<li><code>owner</code> : the future owner of the NFT</li>
+<li><code>token_id</code> : l'ID of the token (NFT) that we are going to mint</li>
+<li><code>amount_</code> : the quantity of tokens we want to mint.</li>
 </ul>
-<p>Enfin, une fois l'opération forgée, nous pouvons l'envoyer à l'API de la Gas Station :</p>
+<p>Finally, once the operation is forged, we can send it to the Gas Station API:</p>
 <pre><code class="language-ts">const response = await gasStationAPI.postOperation(user_address, {
             destination: mint_op.to,
             parameters: mint_op.parameter
           });
 </code></pre>
-<p>L'opération va mettre quelques secondes à être traitée par la Gas Station (généralement 12/15 secondes) si tout va bien. Si une erreur s'est produite (fonds insuffisants, problème d'autorisation pour mint le NFT...), un code d'erreur sera renvoyé, que vous pourrez traiter dans votre dApp pour informer l'utilisateur.</p>
+<p>The operation will take a few seconds to be processed by the Gas Station (usually 12/15 seconds) if everything is correct.
+If an error occurs (insufficient funds, authorization issue for minting the NFT, etc.), an error code will be returned, which you can handle in your dApp to inform the user.</p>
 <h2 id="staking"><a class="header" href="#staking">Staking</a></h2>
-<p>Pour le staking, nous avons besoin d'un permis. En effet, le staking consiste à transférer notre NFT fraîchement minté vers le contrat. Comme le NFT nous appartient, il convient de signer un permis (une autorisation) pour pouvoir effectuer ce transfert.</p>
-<p>Pour faciliter le développement de cette nouvelle feature, nous allons également utiliser le SDK Typescript (pour rappel, vous avez toutes les informations <a href="./LIBRARY.html">ici</a>)</p>
-<p>Pour commencer, nous allons initialiser les classes <code>GasStation</code> et <code>PermitContract</code> du SDK :</p>
+<p>For staking, we need a permit. Staking involves transferring our freshly minted NFT to the contract. As we own the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
+<p>To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information <a href="./LIBRARY.html">here</a>)</p>
+<p>To start, let's initialize the <code>GasStation</code> and <code>PermitContract</code>  classes from the SDK:</p>
 <pre><code class="language-ts">const gasStationApi = new GasStation({
         apiURL: PUBLIC_GAS_STATION_API
       });
 const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
 </code></pre>
-<p>Maintenant nous pouvons générer notre permis à l'aide de la méthode <code>generatePermit</code> :</p>
+<p>Now we can generate our permit using the <code>generatePermit</code> method:</p>
 <pre><code class="language-ts">const permit_data = await permit_contract.generatePermit({
         from_: user_address,
         txs: [{
@@ -344,26 +336,26 @@ const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
         }]
       });
 </code></pre>
-<p>Quelques explications :</p>
+<p>Some explanations:</p>
 <ul>
-<li>La variable <code>PUBLIC_STAKING_CONTRACT</code> contient l'adresse du contrat de staking (disponible à cette adresse <code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code> sur Ghostnet)</li>
-<li>Le <code>token_id</code> correspond à l'ID du token que vous voulez stake</li>
+<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code> on Ghostnet).</li>
+<li>The <code>token_id</code> corresponds to the ID of the token you want to stake.</li>
 </ul>
-<p><code>permit_data</code> contient alors le hash du permis <code>bytes</code> et le hash de l'opération de transfert <code>transfer_hash</code></p>
+<p><code>permit_data</code> then contains the hash of the permit <code>bytes</code> and the hash of transfer operation <code>transfer_hash</code>:</p>
 <pre><code class="language-ts">{
     bytes: string;
     transfer_hash: string;
 }
 </code></pre>
-<p>On doit ensuite faire signer ce permis par l'utilisateur propriétaire du token et récupérer cette signature.</p>
-<p>Cela se fait facilement à l'aide de Taquito :</p>
+<p>Next, we need to have the owner of the token sign this permit and retrieve the signature.</p>
+<p>This is easily done using Taquito:</p>
 <pre><code class="language-ts">const signature = (await (await wallet.client).requestSignPayload({
           signingType: SigningType.MICHELINE,
           payload: permit_data.bytes
       })).signature;
 </code></pre>
-<p>Une fois que nous avons le permis signé, nous pouvons l'enregistrer auprès du contrat qui implémente l'entrypoint <code>permit</code>.</p>
-<p>On va encore pouvoir utiliser le SDK pour faire cela :</p>
+<p>Once we have the signed permit, we can register it with the contract that implements the <code>permit</code> entrypoint.</p>
+<p>Again, we can use the SDK for this:</p>
 <pre><code class="language-ts">const permit_op = await permit_contract.permitCall({
           publicKey: activeAccount.publicKey,
           signature: signature,
@@ -371,20 +363,20 @@ const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
       });
 </code></pre>
 <ul>
-<li>publicKey est la clé publique du propriétaire du token</li>
-<li>signature est la signature du permis récupérée à l'étape précédente</li>
-<li>transferHash est le hash de l'opération de transfert renvoyé lors de la création du permis</li>
+<li><code>publicKey</code> is the public key of the token's owner</li>
+<li><code>signature</code> is the signature of the permit obtained in the previous step</li>
+<li><code>transferHash</code> is the hash of the transfer operation returned during the permit creation</li>
 </ul>
-<p>A ce stade, nous avons toutes les informations nécessaires concernant le permis. Nous allons maintenant pouvoir forgé l'opération de staking à proprement parler et envoyer le tout à la Gas Station.</p>
-<p>Pour forger l'opération de staking, on fait comme d'habitude, on récupère l'instance du contrat à l'aide de Taquito et l'on craft l'opération pour récupérer les paramètres.</p>
+<p>At this point, we have all the necessary information regarding the permit. Now, we can forge the staking operation itself and send everything to the Gas Station.</p>
+<p>To forge the staking operation, we follow the usual process: we retrieve the contract instance using Taquito and craft the operation to get the parameters.</p>
 <pre><code class="language-ts">const staking_contract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
 const staking_op = await staking_contract.methods.stake(
         1,
         user_address
       ).toTransferParams();
 </code></pre>
-<p>:info: <code>PUBLIC_STAKING_CONTRACT</code> est une variable d'environnement contenant l'adresse du contrat implémentant l'entrypoint de staking</p>
-<p>Il ne nous reste plus qu'à envoyer l'opération à la Gas Station afin que les frais de gas soient payés :</p>
+<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is an environment variable containing the contract's address implementing the staking contract.</p>
+<p>All that remains is to send the operation to the Gas Station to have the gas fees covered:</p>
 <pre><code class="language-ts">const response = await gas_api.postOperations(user_address,
           [
             {
@@ -397,9 +389,8 @@ const staking_op = await staking_contract.methods.stake(
             }
           ]);
 </code></pre>
-<p>Ici on utilise <code>postOperations</code> pour poster un batch d'opérations. Ce batch contient l'opération pour enregistrer le permis et l'opération de staking.
-Lorsque l'on appelera l'entrypoint <code>stake</code> du contrat de staking, le permis sera revélé et consommé.</p>
-<p>Comme pour l'opération de mint, la Gas Station répondra en qq dizaines de secondes.</p>
+<p>Here, we use <code>postOperations</code> to submit a batch of operations. This batch contains the operation to register the permit and the staking operation. When calling the staking contract's <code>stake</code> entrypoint, the permit will be revealed and consumed.</p>
+<p>Similar to the minting operation, the Gas Station will respond in a few tens of seconds.</p>
 
                     </main>
 
