@@ -20,7 +20,7 @@ The files of interest are located in `src/lib`. You will find Svelte components 
 ## Minting
 
 We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: `KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx`.
-The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information [here](./LIBRARY.md).
+The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information [here](./library.md).
 
 First, we'll setup the GasStation SDK as follows:
 ```ts
@@ -71,7 +71,7 @@ If an error occurs (insufficient funds, authorization issue for minting the NFT,
 
 For staking, we need a permit. Staking involves transferring our freshly minted NFT to the contract. As we own the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.
 
-To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information [here](./LIBRARY.md))
+To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information [here](./library.md))
 
 To start, let's initialize the `GasStation` and `PermitContract`  classes from the SDK:
 ```ts

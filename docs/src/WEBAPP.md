@@ -38,4 +38,4 @@ You can also withdraw XTZ from your vault. On the `My credits` page, enter the a
 
 ### Test
 
-Once the contract is added and credits are transferred to your vault, you can integrate the Gas Station into your dApps by following this [guide](./TUTORIAL.md). This will allow you to test the seamless integration of the Gas Station with your dApps.
+Once the contract is added and credits are transferred to your vault, you can integrate the Gas Station into your dApps by following this [guide](./tutorial.md). This will allow you to test the seamless integration of the Gas Station with your dApps.

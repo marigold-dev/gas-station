@@ -1,6 +1,25 @@
 [book]
-authors = ["Quentin Burg"]
+authors = ["Marigold.dev"]
 language = "en"
 multilingual = false
 src = "src"
-title = "book"
+title = "Gas Station Documentation"
+
+[output.html]
+mathjax-support = true
+additional-css = ["marigold-docs-theme/marigold.css"]
+additional-js = ["marigold-docs-theme/marigold.js"]
+git-repository-url = "https://github.com/marigold-dev/gas-station"
+
+[output.html.playground]
+editable = true
+line-numbers = true
+
+[output.html.search]
+limit-results = 20
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 2
+boost-paragraph = 1
+expand = true
+heading-split-level = 2

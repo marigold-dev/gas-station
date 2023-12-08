@@ -1,7 +1,7 @@
 # Summary
 
-[Welcome](./WELCOME.md)
-[Gas Station Webapp](./WEBAPP.md)
-[SDKs](./LIBRARY.md)
-[API](./API.md)
-[Tutorial](./TUTORIAL.md)
+[Welcome](./welcome.md)
+[Gas Station Webapp](./webapp.md)
+[SDKs](./library.md)
+[API](./api.md)
+[Tutorial](./tutorial.md)
