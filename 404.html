@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - book</title>
+        <title>Page not found - Gas Station Documentation</title>
         <base href="/">
 
 
@@ -30,7 +30,10 @@
         <link rel="stylesheet" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="marigold-docs-theme/marigold.css">
 
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     </head>
     <body class="sidebar-visible no-js">
     <div id="body-container">
@@ -89,7 +92,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="WELCOME.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="WEBAPP.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="LIBRARY.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="API.html">API</a></li><li class="chapter-item expanded affix "><a href="TUTORIAL.html">Tutorial</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="welcome.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="webapp.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="library.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="api.html">API</a></li><li class="chapter-item expanded affix "><a href="tutorial.html">Tutorial</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -142,11 +145,14 @@
                         </button>
                     </div>
 
-                    <h1 class="menu-title">book</h1>
+                    <h1 class="menu-title">Gas Station Documentation</h1>
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/marigold-dev/gas-station" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
 
                     </div>
@@ -196,11 +202,19 @@
 
 
 
+        <script>
+            window.playground_line_numbers = true;
+        </script>
 
         <script>
             window.playground_copyable = true;
         </script>
 
+        <script src="ace.js"></script>
+        <script src="editor.js"></script>
+        <script src="mode-rust.js"></script>
+        <script src="theme-dawn.js"></script>
+        <script src="theme-tomorrow_night.js"></script>
 
         <script src="elasticlunr.min.js"></script>
         <script src="mark.min.js"></script>
@@ -211,6 +225,7 @@
         <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
+        <script src="marigold-docs-theme/marigold.js"></script>
 
 
     </div>
