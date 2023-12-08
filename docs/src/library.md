@@ -43,8 +43,8 @@ This class has two methods:
 - `generatePermit` creates a permit from a transfer operation. It returns an object containing:
 ```ts
 {
-  bytes: string, // les bytes contenant le permis
-  transfer_hash: string, // le hash de l'operation de transfet
+  bytes: string, // the bytes containing the permit
+  transfer_hash: string, // the hash of the transfer operation
 }
 ```
 
