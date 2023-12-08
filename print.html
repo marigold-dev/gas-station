@@ -289,15 +289,15 @@ The goal here is for the user to initiate the mint action and retrieve their NFT
   apiURL: PUBLIC_GAS_STATION_API
 })
 </code></pre>
-<p>ℹ️ <code>PUBLIC_GAS_STATION_API</code> est une variable d'environnement disponible dans le fichier <code>.env</code></p>
+<p>ℹ️ <code>PUBLIC_GAS_STATION_API</code> is an environment variable available in <code>.env</code></p>
 <p>Next, we'll retrieve an instance of our contract, using <a href="https://tezostaquito.io/">Taquito</a>.</p>
-<pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT);
+<pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT_CONTRACT);
 </code></pre>
 <p>ℹ️ The <code>Tezos</code> instance of Taquito is already initialized in the <code>tezos.ts</code> file, so it can be directly imported.</p>
-<p>ℹ️ <code>PUBLIC_PERMIT</code> is also an environment variable corresponding to the address of your NFT contract.</p>
+<p>ℹ️ <code>PUBLIC_PERMIT_CONTRACT</code> is also an environment variable corresponding to the address of your NFT contract.</p>
 <p>Afterward, we will forge our operation to send to the Gas Station:</p>
-<pre><code class="language-ts">const mint_op = await contract.methodsObject.mint_token([{
-              owner: user_address,
+<pre><code class="language-ts">const mintOperation = await contract.methodsObject.mint_token([{
+              owner: userAddress,
               token_id: 0,
               amount_: 1
           }]).toTransferParams()
@@ -310,9 +310,9 @@ The parameters for this entrypoint are:</p>
 <li><code>amount_</code> : the quantity of tokens we want to mint.</li>
 </ul>
 <p>Finally, once the operation is forged, we can send it to the Gas Station API:</p>
-<pre><code class="language-ts">const response = await gasStationAPI.postOperation(user_address, {
-            destination: mint_op.to,
-            parameters: mint_op.parameter
+<pre><code class="language-ts">const response = await gasStationAPI.postOperation(userAddress, {
+            destination: mintOperation.to,
+            parameters: mintOperation.parameter
           });
 </code></pre>
 <p>The operation will take a few seconds to be processed by the Gas Station (usually 12/15 seconds) if everything is correct.
@@ -324,11 +324,11 @@ If an error occurs (insufficient funds, authorization issue for minting the NFT,
 <pre><code class="language-ts">const gasStationApi = new GasStation({
         apiURL: PUBLIC_GAS_STATION_API
       });
-const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
+const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 </code></pre>
 <p>Now we can generate our permit using the <code>generatePermit</code> method:</p>
-<pre><code class="language-ts">const permit_data = await permit_contract.generatePermit({
-        from_: user_address,
+<pre><code class="language-ts">const permitData = await permitContract.generatePermit({
+        from_: userAddress,
         txs: [{
           to_: PUBLIC_STAKING_CONTRACT,
           token_id,
@@ -341,7 +341,7 @@ const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
 <li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code> on Ghostnet).</li>
 <li>The <code>token_id</code> corresponds to the ID of the token you want to stake.</li>
 </ul>
-<p><code>permit_data</code> then contains the hash of the permit <code>bytes</code> and the hash of transfer operation <code>transfer_hash</code>:</p>
+<p><code>permitData</code> then contains the hash of the permit <code>bytes</code> and the hash of transfer operation <code>transfer_hash</code>:</p>
 <pre><code class="language-ts">{
     bytes: string;
     transfer_hash: string;
@@ -356,7 +356,7 @@ const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
 </code></pre>
 <p>Once we have the signed permit, we can register it with the contract that implements the <code>permit</code> entrypoint.</p>
 <p>Again, we can use the SDK for this:</p>
-<pre><code class="language-ts">const permit_op = await permit_contract.permitCall({
+<pre><code class="language-ts">const permitOperation = await permitContract.permitCall({
           publicKey: activeAccount.publicKey,
           signature: signature,
           transferHash: permit_data.transfer_hash
@@ -369,23 +369,23 @@ const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
 </ul>
 <p>At this point, we have all the necessary information regarding the permit. Now, we can forge the staking operation itself and send everything to the Gas Station.</p>
 <p>To forge the staking operation, we follow the usual process: we retrieve the contract instance using Taquito and craft the operation to get the parameters.</p>
-<pre><code class="language-ts">const staking_contract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
-const staking_op = await staking_contract.methods.stake(
+<pre><code class="language-ts">const stakingContract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
+const stakingOperation = await stakingContract.methods.stake(
         1,
-        user_address
+        userAddress
       ).toTransferParams();
 </code></pre>
 <p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is an environment variable containing the contract's address implementing the staking contract.</p>
 <p>All that remains is to send the operation to the Gas Station to have the gas fees covered:</p>
-<pre><code class="language-ts">const response = await gas_api.postOperations(user_address,
+<pre><code class="language-ts">const response = await gasStationApi.postOperations(userAddress,
           [
             {
-              destination: permit_op.to,
-              parameters: permit_op.parameter
+              destination: permitOperation.to,
+              parameters: permitOperation.parameter
             },
             {
-              destination: staking_op.to,
-              parameters: staking_op.parameter
+              destination: stakingOperation.to,
+              parameters: stakingOperation.parameter
             }
           ]);
 </code></pre>
