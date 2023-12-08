@@ -28,20 +28,22 @@ const gasStationAPI = new GasStation({
   apiURL: PUBLIC_GAS_STATION_API
 })
 ```
-ℹ️ `PUBLIC_GAS_STATION_API` est une variable d'environnement disponible dans le fichier `.env`
+ℹ️ `PUBLIC_GAS_STATION_API` is an environment variable available in `.env`
 
 Next, we'll retrieve an instance of our contract, using [Taquito](https://tezostaquito.io/).
+
 ```ts
-const contract = await Tezos.wallet.at(PUBLIC_PERMIT);
+const contract = await Tezos.wallet.at(PUBLIC_PERMIT_CONTRACT);
 ```
+
 ℹ️ The `Tezos` instance of Taquito is already initialized in the `tezos.ts` file, so it can be directly imported.
 
-ℹ️ `PUBLIC_PERMIT` is also an environment variable corresponding to the address of your NFT contract.
+ℹ️ `PUBLIC_PERMIT_CONTRACT` is also an environment variable corresponding to the address of your NFT contract.
 
 Afterward, we will forge our operation to send to the Gas Station:
 ```ts
-const mint_op = await contract.methodsObject.mint_token([{
-              owner: user_address,
+const mintOperation = await contract.methodsObject.mint_token([{
+              owner: userAddress,
               token_id: 0,
               amount_: 1
           }]).toTransferParams()
@@ -55,9 +57,9 @@ The parameters for this entrypoint are:
 
 Finally, once the operation is forged, we can send it to the Gas Station API:
 ```ts
-const response = await gasStationAPI.postOperation(user_address, {
-            destination: mint_op.to,
-            parameters: mint_op.parameter
+const response = await gasStationAPI.postOperation(userAddress, {
+            destination: mintOperation.to,
+            parameters: mintOperation.parameter
           });
 ```
 
@@ -76,13 +78,13 @@ To start, let's initialize the `GasStation` and `PermitContract`  classes from t
 const gasStationApi = new GasStation({
         apiURL: PUBLIC_GAS_STATION_API
       });
-const permitContract = new PermitContract(PUBLIC_PERMIT, Tezos);
+const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 ```
 
 Now we can generate our permit using the `generatePermit` method:
 ```ts
-const permit_data = await permit_contract.generatePermit({
-        from_: user_address,
+const permitData = await permitContract.generatePermit({
+        from_: userAddress,
         txs: [{
           to_: PUBLIC_STAKING_CONTRACT,
           token_id,
@@ -94,7 +96,7 @@ Some explanations:
 - The variable `PUBLIC_STAKING_CONTRACT` contains the address of the staking contract (available at this address `KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu` on Ghostnet).
 - The `token_id` corresponds to the ID of the token you want to stake.
 
-`permit_data` then contains the hash of the permit `bytes` and the hash of transfer operation `transfer_hash`:
+`permitData` then contains the hash of the permit `bytes` and the hash of transfer operation `transfer_hash`:
 ```ts
 {
     bytes: string;
@@ -116,7 +118,7 @@ Once we have the signed permit, we can register it with the contract that implem
 
 Again, we can use the SDK for this:
 ```ts
-const permit_op = await permit_contract.permitCall({
+const permitOperation = await permitContract.permitCall({
           publicKey: activeAccount.publicKey,
           signature: signature,
           transferHash: permit_data.transfer_hash
@@ -133,10 +135,10 @@ At this point, we have all the necessary information regarding the permit. Now, 
 To forge the staking operation, we follow the usual process: we retrieve the contract instance using Taquito and craft the operation to get the parameters.
 
 ```ts
-const staking_contract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
-const staking_op = await staking_contract.methods.stake(
+const stakingContract = await Tezos.wallet.at(PUBLIC_STAKING_CONTRACT);
+const stakingOperation = await stakingContract.methods.stake(
         1,
-        user_address
+        userAddress
       ).toTransferParams();
 ```
 ℹ️ `PUBLIC_STAKING_CONTRACT` is an environment variable containing the contract's address implementing the staking contract.
@@ -144,15 +146,15 @@ const staking_op = await staking_contract.methods.stake(
 All that remains is to send the operation to the Gas Station to have the gas fees covered:
 
 ```ts
-const response = await gas_api.postOperations(user_address,
+const response = await gasStationApi.postOperations(userAddress,
           [
             {
-              destination: permit_op.to,
-              parameters: permit_op.parameter
+              destination: permitOperation.to,
+              parameters: permitOperation.parameter
             },
             {
-              destination: staking_op.to,
-              parameters: staking_op.parameter
+              destination: stakingOperation.to,
+              parameters: stakingOperation.parameter
             }
           ]);
 ```
