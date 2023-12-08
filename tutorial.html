@@ -182,17 +182,20 @@
                         <h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
 <p>To understand the potential and how to use the Gas Station, let's walk through the simple example of NFTs available at this <a href="https://ghostnet.gas-station-nft-example.marigold.dev">address</a>.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
-<p>The first step is to retrieve the code template located <a href="https://github.com/marigold-dev/gas-station-lib">here</a>.
+<p>The first step is to retrieve the code template located <a href="https://github.com/marigold-dev/gas-station-nft-example-template">here</a>.
 Once retrieved, you can run the following commands:</p>
-<pre><code>npm install
+<pre><code class="language-bash">npm install
 npm run check
 </code></pre>
+<p>ℹ️ Note: If <code>npm run check</code> returns some errors, it's ok. It's just to initialize some Svelte tools.</p>
 <p>To test that everything works well, you can use:</p>
-<pre><code>npm run dev
+<pre><code class="language-bash">npm run dev
 </code></pre>
 <p>The files of interest are located in <code>src/lib</code>. You will find Svelte components and a <code>tezos.ts</code> file that contains utility functions such as wallet connection, etc.</p>
+<p>We will writing some pieces of code in <code>src/lib/MintingComponent.svelte</code> and <code>src/lib/StakingComponent.svelte</code>.
+Let's go ! 💪</p>
 <h2 id="minting"><a class="header" href="#minting">Minting</a></h2>
-<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code>.
+<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations"><code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code></a>.
 The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information <a href="./library.html">here</a>.</p>
 <p>First, we'll setup the GasStation SDK as follows:</p>
 <pre><code class="language-ts">const gasStationAPI = new GasStation({
@@ -248,7 +251,7 @@ const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 </code></pre>
 <p>Some explanations:</p>
 <ul>
-<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code> on Ghostnet).</li>
+<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <a href="https://ghostnet.tzkt.io/KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu/operations"><code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code></a> on Ghostnet).</li>
 <li>The <code>token_id</code> corresponds to the ID of the token you want to stake.</li>
 </ul>
 <p><code>permitData</code> then contains the hash of the permit <code>bytes</code> and the hash of transfer operation <code>transfer_hash</code>:</p>
@@ -301,6 +304,9 @@ const stakingOperation = await stakingContract.methods.stake(
 </code></pre>
 <p>Here, we use <code>postOperations</code> to submit a batch of operations. This batch contains the operation to register the permit and the staking operation. When calling the staking contract's <code>stake</code> entrypoint, the permit will be revealed and consumed.</p>
 <p>Similar to the minting operation, the Gas Station will respond in a few tens of seconds.</p>
+<h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
+<p>We have some pieces of code allowing a user without any XTZ to mint an NFT and stake it on the contract. This is possible thanks to the Gas Station, which relays the transaction by paying the fees.</p>
+<p>Feel free to send us your feedback and comments on this tutorial. 😃</p>
 
                     </main>
 
