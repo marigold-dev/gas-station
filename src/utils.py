@@ -1,6 +1,4 @@
 # -- EXCEPTIONS --
-
-
 class UserNotFound(Exception):
     pass
 
@@ -18,4 +16,8 @@ class CreditNotFound(Exception):
 
 
 class ConfigurationError(Exception):
+    pass
+
+
+class OperationNotFound(Exception):
     pass

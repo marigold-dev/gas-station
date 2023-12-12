@@ -3,7 +3,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from src.utils import ConfigurationError
+from .utils import ConfigurationError
+from .config import logging
 
 
 def config(filename="sql/database.ini", section="postgresql"):
@@ -30,7 +31,7 @@ try:
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base = declarative_base()
 except Exception as e:
-    print(e)
+    logging.error(f"Error occurred on database configuration : {e}")
     raise ConfigurationError("Cannot connect to database.")
 
 

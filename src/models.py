@@ -9,6 +9,11 @@ from .database import Base
 class User(Base):
     __tablename__ = "users"
 
+    def __repr__(self):
+        return "User(id='{}', name='{}', address='{}')".format(
+            self.id, self.name, self.address
+        )
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
     address = Column(String, unique=True)
@@ -65,6 +70,11 @@ class Entrypoint(Base):
 
 class Credit(Base):
     __tablename__ = "credits"
+
+    def __repr__(self):
+        return "Credit(id='{}', amount='{}', owner_id='{}')".format(
+            self.id, self.amount, self.owner_id
+        )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     amount = Column(Integer, default=0)
