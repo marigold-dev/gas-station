@@ -2,6 +2,7 @@ from src import database, models
 from sqlalchemy import text
 import os
 
+
 def truncate_db():
     con = database.engine.connect()
     trans = con.begin()
@@ -15,7 +16,7 @@ def truncate_db():
 def insert_data():
     session = database.SessionLocal()
     try:
-        p = os.path.join('.', 'sql', 'init_db.sql')
+        p = os.path.join(".", "sql", "init_db.sql")
         with open(p) as file:
             query = text(file.read())
             session.execute(query)

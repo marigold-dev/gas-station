@@ -6,13 +6,16 @@ from typing import List, Any
 class UserBase(BaseModel):
     address: str
 
+
 class User(UserBase):
-  id: UUID4
-  name: str
-  withdraw_counter: int
+    id: UUID4
+    name: str
+    withdraw_counter: int
+
 
 class UserCreation(UserBase):
     name: str
+
 
 # Entrypoints
 class EntrypointBase(BaseModel):
@@ -20,25 +23,30 @@ class EntrypointBase(BaseModel):
     contract_id: UUID4
     is_enabled: bool
 
+
 class Entrypoint(EntrypointBase):
-  id: UUID4
+    id: UUID4
+
 
 class EntrypointCreation(BaseModel):
-  name: str
-  is_enabled: bool
+    name: str
+    is_enabled: bool
+
 
 class EntrypointUpdate(BaseModel):
-  id: UUID4
-  is_enabled: bool
+    id: UUID4
+    is_enabled: bool
+
 
 # Credits
 class Credit(BaseModel):
-  id: UUID4
-  amount: int
-  owner_id: UUID4
+    id: UUID4
+    amount: int
+    owner_id: UUID4
+
 
 class CreditCreation(BaseModel):
-  owner_id: UUID4
+    owner_id: UUID4
 
 
 class CreditUpdate(BaseModel):
@@ -58,7 +66,7 @@ class CreditWithdraw(BaseModel):
         return [
             {"string": self.id},
             {"int": self.withdraw_counter},
-            {"int": self.amount}
+            {"int": self.amount},
         ]
 
 
@@ -73,29 +81,34 @@ class WithdrawCounter(BaseModel):
 
 # Contracts
 class ContractBase(BaseModel):
-  address: str
-  owner_id: UUID4
+    address: str
+    owner_id: UUID4
+
 
 class Contract(ContractBase):
-  id: UUID4
-  name: str
-  entrypoints: List[Entrypoint]
-  credit: Credit
+    id: UUID4
+    name: str
+    entrypoints: List[Entrypoint]
+    credit: Credit
+
 
 class ContractCreation(ContractBase):
-  name: str
-  entrypoints: List[EntrypointCreation]
-  credit_id: UUID4
+    name: str
+    entrypoints: List[EntrypointCreation]
+    credit_id: UUID4
+
 
 # Operations
 class UnsignedCall(BaseModel):
     """Data sent when posting an operation. The sender is mandatory."""
+
     sender_address: str
     operations: list[dict[str, Any]]
 
 
 class SignedCall(BaseModel):
     """Data sent when posting an operation. The signature"""
+
     sender_key: str
     operations: list[dict[str, Any]]
     signature: str

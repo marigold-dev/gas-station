@@ -30,7 +30,7 @@ async def create_user(
     user: schemas.UserCreation, db: Session = Depends(database.get_db)
 ):
     user = crud.create_user(db, user)
-    crud.create_credits(db, schemas.CreditCreation(owner_id = user.id))
+    crud.create_credits(db, schemas.CreditCreation(owner_id=user.id))
     return user
 
 
@@ -57,13 +57,11 @@ async def update_credits(
         payer_address = crud.get_credits(db, credits.id).owner.address
         op_hash = credits.operation_hash
         amount = credits.amount
-        is_confirmed = await tezos.confirm_deposit(op_hash,
-                                                   payer_address,
-                                                   amount)
+        is_confirmed = await tezos.confirm_deposit(op_hash, payer_address, amount)
         if not is_confirmed:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Could not find confirmation for {amount} with {op_hash}"
+                detail=f"Could not find confirmation for {amount} with {op_hash}",
             )
         return crud.update_credits(db, credits)
     except ContractNotFound:
@@ -97,43 +95,36 @@ async def withdraw_credits(
     if credits.amount < withdraw.amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Not enough funds to withdraw."
+            detail="Not enough funds to withdraw.",
         )
 
     expected_counter = credits.owner.withdraw_counter or 0
     if expected_counter != withdraw.withdraw_counter:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Bad withdraw counter."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Bad withdraw counter."
         )
 
     owner_address = credits.owner.address
     user = crud.get_user_by_address(db, owner_address)
     public_key = tezos.get_public_key(owner_address)
-    is_valid = tezos.check_signature(withdraw.to_micheline_pair(),
-                                     withdraw.micheline_signature,
-                                     public_key)
+    is_valid = tezos.check_signature(
+        withdraw.to_micheline_pair(), withdraw.micheline_signature, public_key
+    )
     if not is_valid:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid signature."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature."
         )
     # We increment the counter even if the withdraw fails to prevent
     # the counter from being used again immediately.
-    crud.update_user_withdraw_counter(db,
-                                      str(user.id),
-                                      withdraw.withdraw_counter+1)
-    result = await tezos.withdraw(tezos.tezos_manager,
-                                  owner_address,
-                                  withdraw.amount)
+    crud.update_user_withdraw_counter(db, str(user.id), withdraw.withdraw_counter + 1)
+    result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
         # Starts a independent loop to check that the operation
         # has been confirmed
         asyncio.create_task(
-            tezos.confirm_withdraw(result["transaction_hash"],
-                                   db,
-                                   str(user.id),
-                                   withdraw)
+            tezos.confirm_withdraw(
+                result["transaction_hash"], db, str(user.id), withdraw
+            )
         )
 
     return result
@@ -154,14 +145,12 @@ async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
         )
 
 
-@router.get("/credits/{user_address_or_id}",
-            response_model=list[schemas.Credit])
+@router.get("/credits/{user_address_or_id}", response_model=list[schemas.Credit])
 async def credits_for_user(
     user_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        if is_address(user_address_or_id) \
-           and user_address_or_id.startswith("tz"):
+        if is_address(user_address_or_id) and user_address_or_id.startswith("tz"):
             return crud.get_user_by_address(db, user_address_or_id).credits
         else:
             return crud.get_user(db, user_address_or_id).credits
@@ -173,10 +162,8 @@ async def credits_for_user(
 
 
 # Contracts
-@router.get("/contracts/user/{user_address}",
-            response_model=list[schemas.Contract])
-async def get_user_contracts(user_address: str,
-                             db: Session = Depends(database.get_db)):
+@router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
+async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_user(db, user_address)
     except UserNotFound:
@@ -185,8 +172,7 @@ async def get_user_contracts(user_address: str,
         )
 
 
-@router.get("/contracts/credit/{credit_id}",
-            response_model=list[schemas.Contract])
+@router.get("/contracts/credit/{credit_id}", response_model=list[schemas.Contract])
 async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_credit(db, credit_id)
@@ -197,8 +183,7 @@ async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
 
 
 @router.get("/contracts/{address_or_id}", response_model=schemas.Contract)
-async def get_contract(address_or_id: str,
-                       db: Session = Depends(database.get_db)):
+async def get_contract(address_or_id: str, db: Session = Depends(database.get_db)):
     if is_address(address_or_id) and address_or_id.startswith("KT"):
         contract = crud.get_contract_by_address(db, address_or_id)
     else:
@@ -211,8 +196,9 @@ async def get_contract(address_or_id: str,
 
 
 # Entrypoints
-@router.get("/entrypoints/{contract_address_or_id}",
-            response_model=list[schemas.Entrypoint])
+@router.get(
+    "/entrypoints/{contract_address_or_id}", response_model=list[schemas.Entrypoint]
+)
 async def get_entrypoints(
     contract_address_or_id: str, db: Session = Depends(database.get_db)
 ):
@@ -230,12 +216,11 @@ async def get_entrypoints(
         )
 
 
-@router.get("/entrypoints/{contract_address_or_id}/{name}",
-            response_model=schemas.Entrypoint)
+@router.get(
+    "/entrypoints/{contract_address_or_id}/{name}", response_model=schemas.Entrypoint
+)
 async def get_entrypoint(
-    contract_address_or_id: str,
-    name: str,
-    db: Session = Depends(database.get_db)
+    contract_address_or_id: str, name: str, db: Session = Depends(database.get_db)
 ):
     try:
         return crud.get_entrypoint(db, contract_address_or_id, name)
@@ -287,18 +272,13 @@ async def post_operation(
         # Simulate the operation alone without sending it
         # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
-        op_estimated_fees = [(int(x["fee"]), x["destination"])
-                             for x in op.contents]
+        op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
         if not tezos.check_credits(db, estimated_fees):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not enough funds."
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough funds."
             )
-        result = await tezos.tezos_manager.queue_operation(
-            call_data.sender_address,
-            op
-        )
+        result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
     except MichelsonError as e:
         print("Received failing operation, discarding")
         print(e)
@@ -325,16 +305,13 @@ async def signed_operation(
     # FIXME: this is a serious issue, we should sign the contract address too.
     signed_data = [x["parameters"]["value"] for x in call_data.operations]
     if not tezos.check_signature(
-        signed_data,
-        call_data.signature,
-        call_data.sender_key,
-        call_data.micheline_type
+        signed_data, call_data.signature, call_data.sender_key, call_data.micheline_type
     ):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid signature."
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature."
         )
     address = tezos.public_key_hash(call_data.sender_key)
-    call_data = schemas.UnsignedCall(sender_address=address,
-                                     operations=call_data.operations)
+    call_data = schemas.UnsignedCall(
+        sender_address=address, operations=call_data.operations
+    )
     return await post_operation(call_data, db)
