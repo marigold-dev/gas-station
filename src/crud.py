@@ -2,8 +2,7 @@ from typing import Optional, List
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
-from src.utils import ContractNotFound, CreditNotFound
-from src.utils import EntrypointNotFound, UserNotFound
+from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
 from . import models, schemas
 from sqlalchemy.exc import NoResultFound
 

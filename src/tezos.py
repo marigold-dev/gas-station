@@ -2,15 +2,15 @@ from collections import OrderedDict
 import asyncio
 from typing import Union
 
-from src import database
 
-# from .pytezos import ptz, pytezos
-from . import crud, schemas
+from . import crud, schemas, config, database
+from .utils import OperationNotFound
 from pytezos.rpc.errors import MichelsonError
-from pytezos.michelson.types import MichelsonType
+from pytezos.michelson.types.base import MichelsonType
 import pytezos
 
-from . import config
+
+log = config.logging
 
 # Config stuff for pytezos
 assert (
@@ -19,15 +19,14 @@ assert (
 
 admin_key = pytezos.pytezos.key.from_encoded_key(config.SECRET_KEY)
 ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
-print(f"INFO: API address is {ptz.key.public_key_hash()}")
+log.info(f"API address is {ptz.key.public_key_hash()}")
 constants = ptz.shell.block.context.constants()
 
 
-class OperationNotFound(Exception):
-    pass
-
-
 async def find_transaction(tx_hash):
+    """Finds the transaction from its hash.
+    This function searches the last 10 blocks
+    """
     block_time = int(constants["minimal_block_delay"])
     nb_try = 0
     while nb_try < 4:
@@ -74,7 +73,7 @@ def check_credits(db, estimated_fees):
     for address, total_fee in estimated_fees.items():
         credits = crud.get_credits_from_contract_address(db, address)
         if total_fee > credits.amount:
-            print(
+            log.warning(
                 f"Unsufficient credits {credits.amount} for contract"
                 + f"{address}; total fees are {total_fee}."
             )
@@ -85,10 +84,6 @@ def check_credits(db, estimated_fees):
 async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     receiver = ptz.key.public_key_hash()
     op_result = await find_transaction(tx_hash)
-    print(op_result["contents"])
-    print("payer " + str(payer))
-    print("receiver " + str(receiver))
-    print("amount " + str(amount))
     return any(
         op
         for op in op_result["contents"]
@@ -100,6 +95,9 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
 
 
 async def confirm_withdraw(tx_hash, db, user_id, withdraw):
+    """Ensure withdraw transaction is successful to update credits user. \n
+    Can raise an OperationNotFound exception if transaction is not found.
+    """
     await find_transaction(tx_hash)
     credit_update = schemas.CreditUpdate(
         id=withdraw.id, amount=-withdraw.amount, owner_id=user_id, operation_hash=""
@@ -142,6 +140,7 @@ def check_signature(pair_data, signature, public_key, pair_type=None):
         # .verify raises an exception when the verification fails
         return public_key.verify(message=packed_pair, signature=signature)
     except ValueError:
+        log.error(f"Signature {signature} for {public_key} is not valid.")
         return False
 
 
@@ -167,7 +166,6 @@ class TezosManager:
     # Receive an operation from sender and add it to the waiting queue;
     # blocks until there is a result in self.results
     async def queue_operation(self, sender, operation):
-        print(operation)
         self.results[sender] = "waiting"
         self.ops_queue[sender] = operation
         while self.results[sender] == "waiting":
@@ -176,6 +174,7 @@ class TezosManager:
             await asyncio.sleep(1)
 
         if self.results[sender] == "waiting":
+            log.error(f"Still waiting for transaction from {sender}... Abort")
             raise Exception()
 
         return {
@@ -209,7 +208,7 @@ class TezosManager:
                 # TODO catch errors
 
                 n_ops = len(self.ops_queue)
-                print(f"found {n_ops} operations to send")
+                log.debug(f"found {n_ops} operations to send")
                 acceptable_operations = OrderedDict()
                 for sender in self.ops_queue:
                     op = self.ops_queue[sender]
@@ -223,8 +222,9 @@ class TezosManager:
                         self.results[sender] = "failing"
 
                 n_ops = len(acceptable_operations)
-                print(f"found {n_ops} valid operations to send")
+                log.debug(f"found {n_ops} valid operations to send")
                 if n_ops > 0:
+                    log.info(f"{n_ops} operations to process and send")
                     # Post all the correct operations together and get the
                     # result from the RPC to know what the real fees were
                     posted_tx = ptz.bulk(*acceptable_operations.values()).send()
@@ -233,9 +233,10 @@ class TezosManager:
                         self.results[k] = {"transaction": posted_tx}
                     asyncio.create_task(self.update_fees(posted_tx))
                 self.ops_queue = dict()
-                print("Tezos loop executed")
-            except Exception:
+                log.debug("Tezos loop executed")
+            except Exception as e:
                 # FIXME: Should we raise an Exception here ?
+                log.error(f"Error occurred on main loop : {e}")
                 pass
 
 

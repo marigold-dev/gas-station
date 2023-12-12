@@ -1,16 +1,18 @@
-from src import database
 from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List
-import src.crud as crud
-import src.schemas as schemas
-import uuid
 import asyncio
 
 from sqlalchemy.orm import Session
-from . import tezos
+from . import tezos, crud, schemas, database
 from pytezos.rpc.errors import MichelsonError
 from pytezos.crypto.encoding import is_address
-from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
+from .utils import (
+    ContractNotFound,
+    CreditNotFound,
+    EntrypointNotFound,
+    UserNotFound,
+    OperationNotFound,
+)
+from .config import logging
 
 
 router = APIRouter()
@@ -74,7 +76,7 @@ async def update_credits(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Credit not found.",
         )
-    except tezos.OperationNotFound:
+    except OperationNotFound:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Could not find the operation.",
@@ -255,23 +257,24 @@ async def post_operation(
         except ContractNotFound:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Target {contract_address} is not allowed",
+                detail=f"{contract_address} is not found",
             )
 
         entrypoint_name = operation["parameters"]["entrypoint"]
-        print(contract_address, entrypoint_name)
+
         try:
             crud.get_entrypoint(db, str(contract.address), entrypoint_name)
         except EntrypointNotFound:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Entrypoint {entrypoint_name} is not allowed",
+                detail=f"Entrypoint {entrypoint_name} is not found",
             )
 
     try:
         # Simulate the operation alone without sending it
         # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
+        logging.debug(f"Result of operation simulation : {op}")
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
         if not tezos.check_credits(db, estimated_fees):
@@ -281,14 +284,14 @@ async def post_operation(
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
     except MichelsonError as e:
         print("Received failing operation, discarding")
-        print(e)
+        logging.error(f"Invalid operation {e}")
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Operation is invalid",
         )
     except Exception as e:
-        print(e)
+        logging.error(f"Unknown error on /operation : {e}")
         raise HTTPException(
             # FIXME? Is this the best one?
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -311,7 +314,7 @@ async def signed_operation(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature."
         )
     address = tezos.public_key_hash(call_data.sender_key)
-    call_data = schemas.UnsignedCall(
+    call_data_unsigned = schemas.UnsignedCall(
         sender_address=address, operations=call_data.operations
     )
-    return await post_operation(call_data, db)
+    return await post_operation(call_data_unsigned, db)
