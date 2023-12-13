@@ -21,3 +21,7 @@ class ConfigurationError(Exception):
 
 class OperationNotFound(Exception):
     pass
+
+
+class ContractAlreadyRegistered(Exception):
+    pass
