@@ -1,3 +1,4 @@
+from math import log
 from fastapi import APIRouter, HTTPException, status, Depends
 import asyncio
 
@@ -6,6 +7,7 @@ from . import tezos, crud, schemas, database
 from pytezos.rpc.errors import MichelsonError
 from pytezos.crypto.encoding import is_address
 from .utils import (
+    ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
     EntrypointNotFound,
@@ -40,7 +42,14 @@ async def create_user(
 async def create_contract(
     contract: schemas.ContractCreation, db: Session = Depends(database.get_db)
 ):
-    return crud.create_contract(db, contract)
+    try:
+        return crud.create_contract(db, contract)
+    except ContractAlreadyRegistered:
+        logging.warn(f"Contract {contract.address} is already registered")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Contract {contract.address} is already registered.",
+        )
 
 
 # PUT endpoints
@@ -61,22 +70,26 @@ async def update_credits(
         amount = credits.amount
         is_confirmed = await tezos.confirm_deposit(op_hash, payer_address, amount)
         if not is_confirmed:
+            logging.warning(f"Could not find confirmation for {amount} with {op_hash}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Could not find confirmation for {amount} with {op_hash}",
             )
         return crud.update_credits(db, credits)
     except ContractNotFound:
+        logging.warning(f"Contrat not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Contrat not found.",
         )
     except CreditNotFound:
+        logging.warning(f"Credit not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Credit not found.",
         )
     except OperationNotFound:
+        logging.warning(f"Could not find the operation.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Could not find the operation.",
@@ -90,11 +103,13 @@ async def withdraw_credits(
     try:
         credits = crud.get_credits(db, withdraw.id)
     except CreditNotFound:
+        logging.warning(f"Credit not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Credit not found.",
         )
     if credits.amount < withdraw.amount:
+        logging.warning(f"Not enough funds to withdraw credit ID {withdraw.id}.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough funds to withdraw.",
@@ -102,6 +117,7 @@ async def withdraw_credits(
 
     expected_counter = credits.owner.withdraw_counter or 0
     if expected_counter != withdraw.withdraw_counter:
+        logging.warning(f"Withdraw counter provided is not the expected counter.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Bad withdraw counter."
         )
@@ -113,6 +129,7 @@ async def withdraw_credits(
         withdraw.to_micheline_pair(), withdraw.micheline_signature, public_key
     )
     if not is_valid:
+        logging.warning(f"Invalid signature")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature."
         )
@@ -121,6 +138,7 @@ async def withdraw_credits(
     crud.update_user_withdraw_counter(db, str(user.id), withdraw.withdraw_counter + 1)
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
+        logging.debug(f"Start to confirm withdraw for {result['transaction_hash']}")
         # Starts a independent loop to check that the operation
         # has been confirmed
         asyncio.create_task(
@@ -141,6 +159,7 @@ async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
         else:
             return crud.get_user(db, address_or_id)
     except UserNotFound:
+        logging.warning(f"User {address_or_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User not found.",
@@ -157,6 +176,7 @@ async def credits_for_user(
         else:
             return crud.get_user(db, user_address_or_id).credits
     except UserNotFound:
+        logging.warning(f"User {user_address_or_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"User not found.",
@@ -169,6 +189,7 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
     try:
         return crud.get_contracts_by_user(db, user_address)
     except UserNotFound:
+        logging.warning(f"User {user_address} not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
         )
@@ -179,6 +200,7 @@ async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_credit(db, credit_id)
     except CreditNotFound:
+        logging.warning(f"Credit {credit_id} not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Credit not found."
         )
@@ -191,6 +213,7 @@ async def get_contract(address_or_id: str, db: Session = Depends(database.get_db
     else:
         contract = crud.get_contract(db, address_or_id)
     if not contract:
+        logging.warning(f"Contract {address_or_id} not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
         )
@@ -209,10 +232,12 @@ async def get_entrypoints(
             assert is_address(contract_address_or_id)
         return crud.get_entrypoints(db, contract_address_or_id)
     except ContractNotFound:
+        logging.warning(f"Contract {contract_address_or_id} not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Contract not found."
         )
     except AssertionError:
+        logging.warning(f"Invalid address {contract_address_or_id} provided")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid address."
         )
@@ -227,6 +252,7 @@ async def get_entrypoint(
     try:
         return crud.get_entrypoint(db, contract_address_or_id, name)
     except EntrypointNotFound:
+        logging.warning(f"Entrypoint {contract_address_or_id} not found.")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Entrypoint not found."
         )
@@ -238,6 +264,7 @@ async def post_operation(
     call_data: schemas.UnsignedCall, db: Session = Depends(database.get_db)
 ):
     if len(call_data.operations) == 0:
+        logging.warning(f"Operations list is empty")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Empty operations list",
@@ -248,6 +275,7 @@ async def post_operation(
 
         # Transfers to implicit accounts are always refused
         if not contract_address.startswith("KT"):
+            logging.warning(f"Target {contract_address} is not allowed")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Target {contract_address} is not allowed",
@@ -255,6 +283,7 @@ async def post_operation(
         try:
             contract = crud.get_contract_by_address(db, contract_address)
         except ContractNotFound:
+            logging.warning(f"{contract_address} is not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{contract_address} is not found",
@@ -265,6 +294,7 @@ async def post_operation(
         try:
             crud.get_entrypoint(db, str(contract.address), entrypoint_name)
         except EntrypointNotFound:
+            logging.warning(f"Entrypoint {entrypoint_name} is not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not found",
@@ -277,7 +307,9 @@ async def post_operation(
         logging.debug(f"Result of operation simulation : {op}")
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
+        logging.debug(f"Estimated fees for {op.hash()}: {estimated_fees}")
         if not tezos.check_credits(db, estimated_fees):
+            logging.warning(f"Not enough funds to pay estimated fees.")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough funds."
             )
@@ -310,6 +342,7 @@ async def signed_operation(
     if not tezos.check_signature(
         signed_data, call_data.signature, call_data.sender_key, call_data.micheline_type
     ):
+        logging.warning("Invalid signature.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature."
         )

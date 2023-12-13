@@ -1,8 +1,15 @@
 from typing import Optional, List
+from psycopg2.errors import UniqueViolation
 from pydantic import UUID4
 from sqlalchemy.orm import Session
 
-from .utils import ContractNotFound, CreditNotFound, EntrypointNotFound, UserNotFound
+from .utils import (
+    ContractAlreadyRegistered,
+    ContractNotFound,
+    CreditNotFound,
+    EntrypointNotFound,
+    UserNotFound,
+)
 from . import models, schemas
 from sqlalchemy.exc import NoResultFound
 
@@ -102,18 +109,22 @@ def get_entrypoint(
 
 def create_contract(db: Session, contract: schemas.ContractCreation):
     # TODO rewrite this with transaction or something else better
-    c = {k: v for k, v in contract.model_dump().items() if k not in ["entrypoints"]}
-    db_contract = models.Contract(**c)
-    db.add(db_contract)
-    db.commit()
-    db.refresh(db_contract)
-    db_entrypoints = [
-        models.Entrypoint(**e.model_dump(), contract_id=db_contract.id)
-        for e in contract.entrypoints
-    ]
-    db.add_all(db_entrypoints)
-    db.commit()
-    return db_contract
+    try:
+        contract = get_contract_by_address(db, contract.address)
+        raise ContractAlreadyRegistered(f"Contract {contract.address} already added.")
+    except ContractNotFound:
+        c = {k: v for k, v in contract.model_dump().items() if k not in ["entrypoints"]}
+        db_contract = models.Contract(**c)
+        db.add(db_contract)
+        db.commit()
+        db.refresh(db_contract)
+        db_entrypoints = [
+            models.Entrypoint(**e.model_dump(), contract_id=db_contract.id)
+            for e in contract.entrypoints
+        ]
+        db.add_all(db_entrypoints)
+        db.commit()
+        return db_contract
 
 
 def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate]):

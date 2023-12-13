@@ -218,6 +218,9 @@ class TezosManager:
                     except MichelsonError:
                         # The last operation conflicts with some of the others;
                         # we refuse it
+                        log.error(
+                            f"Last operation ({acceptable_operations[sender]}) failed and conflicts with some of the others so we discard it."
+                        )
                         acceptable_operations.pop(sender)
                         self.results[sender] = "failing"
 
