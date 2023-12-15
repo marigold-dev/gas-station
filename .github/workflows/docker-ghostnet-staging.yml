@@ -49,6 +49,6 @@ jobs:
           context: ./
           push: true
           tags: |
-            ghcr.io/marigold-dev/gas-station-${{ matrix.network }}:${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.sha_short }}-staging
+            ghcr.io/marigold-dev/gas-station-api-${{ matrix.network }}:${{ steps.vars.outputs.date }}-${{ steps.vars.outputs.sha_short }}-staging
           cache-from: type=gha
           cache-to: type=gha,mode=max
