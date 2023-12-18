@@ -188,7 +188,12 @@
 <pre><code class="language-bash">npm install --save @marigold-dev/gas-station-lib
 </code></pre>
 <h4 id="explanations"><a class="header" href="#explanations">Explanations</a></h4>
-<p>The SDK consists of two classes : <code>GasStation</code> and <code>PermitContract</code>.</p>
+<p>The SDK consists of two classes: <code>GasStation</code> and <code>PermitContract</code>.</p>
+<p>There are also two variables:</p>
+<ul>
+<li><code>GAS_STATION_PUBLIC_API_GHOSTNET</code> which redirect to <a href="https://ghostnet.gas-station-api.marigold.dev/operation">https://ghostnet.gas-station-api.marigold.dev/operation</a></li>
+<li><code>GAS_STATION_PUBLIC_API_MAINNET</code> which redirect to <a href="https://gas-station-api.marigold.dev/operation">https://gas-station-api.marigold.dev/operation</a> (Not available yet)</li>
+</ul>
 <p>The <code>GasStation</code> class enables easy communication with the Gas Station API without the need to manually initialize the HTTP request.</p>
 <p>To initialize this class, you need to provide it with a Gas Station API URL. For now, you can use <code>https://gas-station-api.marigold.dev/operation</code>.</p>
 <p>The class has two methods:</p>
@@ -232,8 +237,13 @@
 <p>To begin, you need to import and initialize the <code>GasStation</code> object from the SDK:</p>
 <pre><code class="language-ts">import { GasStation } from '@marigold-dev/gas-station-lib'
 
+const gasApi = new GasStation()
+</code></pre>
+<p>ℹ️ NOTE: By default, the Gas Station used by the SDK is on Ghostnet but you can also provide a <code>apiURL</code> like:</p>
+<pre><code class="language-ts">import { GasStation, GAS_STATION_PUBLIC_API_GHOSTNET} from '@marigold-dev/gas-station-lib'
+
 const gasApi = new GasStation({
-  apiURL: 'https://gas-station-api.marigold.dev/'
+  apiURL: GAS_STATION_PUBLIC_API_GHOSTNET // or the URL directly
 })
 </code></pre>
 <p>Next, you can forge your operation, for example, to mint an NFT (assuming the contract has a <code>mint_token</code> entrypoint):</p>

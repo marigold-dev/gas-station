@@ -198,11 +198,9 @@ Let's go ! 💪</p>
 <p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations"><code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code></a>.
 The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information <a href="./library.html">here</a>.</p>
 <p>First, we'll setup the GasStation SDK as follows:</p>
-<pre><code class="language-ts">const gasStationAPI = new GasStation({
-  apiURL: PUBLIC_GAS_STATION_API
-})
+<pre><code class="language-ts">const gasStationAPI = new GasStation()
 </code></pre>
-<p>ℹ️ <code>PUBLIC_GAS_STATION_API</code> is an environment variable available in <code>.env</code></p>
+<p>ℹ️ <code>GasStation</code> class will target the Gas Station deployed on Ghostnet by default.</p>
 <p>Next, we'll retrieve an instance of our contract, using <a href="https://tezostaquito.io/">Taquito</a>.</p>
 <pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT_CONTRACT);
 </code></pre>
@@ -234,9 +232,8 @@ If an error occurs (insufficient funds, authorization issue for minting the NFT,
 <p>For staking, we need a permit. Staking involves transferring our freshly minted NFT to the contract. As we own the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
 <p>To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information <a href="./library.html">here</a>)</p>
 <p>To start, let's initialize the <code>GasStation</code> and <code>PermitContract</code>  classes from the SDK:</p>
-<pre><code class="language-ts">const gasStationApi = new GasStation({
-        apiURL: PUBLIC_GAS_STATION_API
-      });
+<p>ℹ️ <code>GasStation</code> class will target the Gas Station deployed on Ghostnet by default.</p>
+<pre><code class="language-ts">const gasStationApi = new GasStation();
 const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 </code></pre>
 <p>Now we can generate our permit using the <code>generatePermit</code> method:</p>
