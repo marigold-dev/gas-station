@@ -16,7 +16,11 @@ npm install --save @marigold-dev/gas-station-lib
 
 #### Explanations
 
-The SDK consists of two classes : `GasStation` and `PermitContract`.
+The SDK consists of two classes: `GasStation` and `PermitContract`.
+
+There are also two variables:
+  - `GAS_STATION_PUBLIC_API_GHOSTNET` which redirect to [https://ghostnet.gas-station-api.marigold.dev/operation](https://ghostnet.gas-station-api.marigold.dev/operation)
+  - `GAS_STATION_PUBLIC_API_MAINNET` which redirect to [https://gas-station-api.marigold.dev/operation](https://gas-station-api.marigold.dev/operation) (Not available yet)
 
 The `GasStation` class enables easy communication with the Gas Station API without the need to manually initialize the HTTP request.
 
@@ -66,8 +70,15 @@ To begin, you need to import and initialize the `GasStation` object from the SDK
 ```ts
 import { GasStation } from '@marigold-dev/gas-station-lib'
 
+const gasApi = new GasStation()
+```
+
+ℹ️ NOTE: By default, the Gas Station used by the SDK is on Ghostnet but you can also provide a `apiURL` like:
+```ts
+import { GasStation, GAS_STATION_PUBLIC_API_GHOSTNET} from '@marigold-dev/gas-station-lib'
+
 const gasApi = new GasStation({
-  apiURL: 'https://gas-station-api.marigold.dev/'
+  apiURL: GAS_STATION_PUBLIC_API_GHOSTNET // or the URL directly
 })
 ```
 
