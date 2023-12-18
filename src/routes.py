@@ -10,6 +10,7 @@ from .utils import (
     ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
+    EntrypointDisabled,
     EntrypointNotFound,
     UserNotFound,
     OperationNotFound,
@@ -292,12 +293,20 @@ async def post_operation(
         entrypoint_name = operation["parameters"]["entrypoint"]
 
         try:
-            crud.get_entrypoint(db, str(contract.address), entrypoint_name)
+            entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
+            if not entrypoint.is_enabled:
+                raise EntrypointDisabled()
         except EntrypointNotFound:
             logging.warning(f"Entrypoint {entrypoint_name} is not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not found",
+            )
+        except EntrypointDisabled:
+            logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Entrypoint {entrypoint_name} is disabled.",
             )
 
     try:
@@ -307,7 +316,7 @@ async def post_operation(
         logging.debug(f"Result of operation simulation : {op}")
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
-        logging.debug(f"Estimated fees for {op.hash()}: {estimated_fees}")
+        logging.debug(f"Estimated fees: {estimated_fees}")
         if not tezos.check_credits(db, estimated_fees):
             logging.warning(f"Not enough funds to pay estimated fees.")
             raise HTTPException(

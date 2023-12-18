@@ -11,6 +11,10 @@ class EntrypointNotFound(Exception):
     pass
 
 
+class EntrypointDisabled(Exception):
+    pass
+
+
 class CreditNotFound(Exception):
     pass
 
