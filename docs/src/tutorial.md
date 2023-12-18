@@ -31,11 +31,9 @@ The goal here is for the user to initiate the mint action and retrieve their NFT
 
 First, we'll setup the GasStation SDK as follows:
 ```ts
-const gasStationAPI = new GasStation({
-  apiURL: PUBLIC_GAS_STATION_API
-})
+const gasStationAPI = new GasStation()
 ```
-ℹ️ `PUBLIC_GAS_STATION_API` is an environment variable available in `.env`
+ℹ️ `GasStation` class will target the Gas Station deployed on Ghostnet by default.
 
 Next, we'll retrieve an instance of our contract, using [Taquito](https://tezostaquito.io/).
 
@@ -81,10 +79,11 @@ For staking, we need a permit. Staking involves transferring our freshly minted 
 To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information [here](./library.md))
 
 To start, let's initialize the `GasStation` and `PermitContract`  classes from the SDK:
+
+ℹ️ `GasStation` class will target the Gas Station deployed on Ghostnet by default.
+
 ```ts
-const gasStationApi = new GasStation({
-        apiURL: PUBLIC_GAS_STATION_API
-      });
+const gasStationApi = new GasStation();
 const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 ```
 
