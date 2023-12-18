@@ -94,9 +94,7 @@ def get_entrypoints(
     return contract.entrypoints
 
 
-def get_entrypoint(
-    db: Session, contract_address_or_id: str, name: str
-) -> Optional[models.Entrypoint]:
+def get_entrypoint(db: Session, contract_address_or_id: str, name: str):
     """
     Return a models.Entrypoint or raise EntrypointNotFound exception
     """
@@ -233,7 +231,6 @@ def get_credits_from_contract_address(db: Session, contract_address: str):
         )
         if db_contract is None:
             raise ContractNotFound()
-        print(db_contract)
         db_credit = (
             db.query(models.Credit)
             .filter(models.Credit.id == db_contract.credit_id)
