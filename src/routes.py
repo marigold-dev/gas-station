@@ -321,9 +321,7 @@ async def post_operation(
 
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
-
         logging.debug(f"Estimated fees: {estimated_fees}")
-
         if not tezos.check_credits(db, estimated_fees):
             logging.warning(f"Not enough funds to pay estimated fees.")
             raise NotEnoughFunds(
