@@ -10,8 +10,8 @@ class User(Base):
     __tablename__ = "users"
 
     def __repr__(self):
-        return "User(id='{}', name='{}', address='{}')".format(
-            self.id, self.name, self.address
+        return "User(id='{}', name='{}', address='{}', counter='{}')".format(
+            self.id, self.name, self.address, self.withdraw_counter
         )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

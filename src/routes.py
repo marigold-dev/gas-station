@@ -135,7 +135,9 @@ async def withdraw_credits(
         )
     # We increment the counter even if the withdraw fails to prevent
     # the counter from being used again immediately.
-    crud.update_user_withdraw_counter(db, str(user.id), withdraw.withdraw_counter + 1)
+    counter = crud.update_user_withdraw_counter(
+        db, str(user.id), withdraw.withdraw_counter + 1
+    )
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
         logging.debug(f"Start to confirm withdraw for {result['transaction_hash']}")
@@ -147,7 +149,7 @@ async def withdraw_credits(
             )
         )
 
-    return result
+    return {**result, "counter": counter}
 
 
 # Users and credits getters
