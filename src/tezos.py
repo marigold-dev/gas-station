@@ -2,9 +2,6 @@ from collections import OrderedDict
 import asyncio
 from typing import Union
 
-from requests import post
-
-
 from . import crud, schemas, config, database
 from .utils import OperationNotFound
 from pytezos.rpc.errors import MichelsonError
@@ -210,7 +207,6 @@ class TezosManager:
                 crud.update_credits_from_contract_address(
                     db, amount=fee, address=contract
                 )
-                print("hey", posted_tx.hash(), fee)
 
                 crud.update_amount_operation(db, posted_tx.hash(), fee)
 

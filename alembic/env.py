@@ -15,10 +15,6 @@ cfg = config()
 url = (
     f"postgresql://{cfg['user']}:{cfg['password']}@{cfg['host']}:5432/{cfg['database']}"
 )
-print(url)
-# alembic_cfg = Config()
-# alembic_cfg.set_main_option("sqlalchemy.url", url)
-# print(alembic_cfg)
 
 
 # this is the Alembic Config object, which provides
