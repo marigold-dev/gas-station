@@ -9,11 +9,11 @@ INSERT INTO credits("id", "amount", "owner_id")
         ('b683c679-be44-4fd7-9f65-90aa01534bde', '643535536', 'b8c23360-9a81-4450-93d8-ea32a2d7467e');
 
 
-INSERT INTO contracts("id", "address", "name", "owner_id", "credit_id")
+INSERT INTO contracts("id", "address", "name", "owner_id", "credit_id", "max_calls_per_month")
         VALUES
-        ('c8b3f63a-9453-4e9f-98b3-855a0de682aa', 'KT1Re88VMEJ7TLHTkXSHQYZQTD3MP3k7j6Ar', 'NFT weapons', '164b18e2-205b-47fa-8fa5-e9961b3a8437', '4dd87743-6893-4c00-b89b-67e0960d06a8'),
-        ('f08660dc-34a8-4575-b53c-19d362296ead', 'KT1Rp1rgfwS25XrWU6fUnR8cw6KMZBhDvXdq', 'Staking contract', '164b18e2-205b-47fa-8fa5-e9961b3a8437', 'b683c679-be44-4fd7-9f65-90aa01534bde'),
-        ('4dfbd6f2-ca41-48d0-adc5-9c0bef8127d1', 'KT1FkUTvJxzPMGNFkD8ccrjESKWAqvkzUPr4', 'Another contract', 'b8c23360-9a81-4450-93d8-ea32a2d7467e', 'b683c679-be44-4fd7-9f65-90aa01534bde');
+        ('c8b3f63a-9453-4e9f-98b3-855a0de682aa', 'KT1Re88VMEJ7TLHTkXSHQYZQTD3MP3k7j6Ar', 'NFT weapons', '164b18e2-205b-47fa-8fa5-e9961b3a8437', '4dd87743-6893-4c00-b89b-67e0960d06a8', -1),
+        ('f08660dc-34a8-4575-b53c-19d362296ead', 'KT1Rp1rgfwS25XrWU6fUnR8cw6KMZBhDvXdq', 'Staking contract', '164b18e2-205b-47fa-8fa5-e9961b3a8437', 'b683c679-be44-4fd7-9f65-90aa01534bde', -1),
+        ('4dfbd6f2-ca41-48d0-adc5-9c0bef8127d1', 'KT1FkUTvJxzPMGNFkD8ccrjESKWAqvkzUPr4', 'Another contract', 'b8c23360-9a81-4450-93d8-ea32a2d7467e', 'b683c679-be44-4fd7-9f65-90aa01534bde', -1);
 
 
 INSERT INTO entrypoints("id", "name", "is_enabled", "contract_id")

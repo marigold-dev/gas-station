@@ -2,6 +2,8 @@ from collections import OrderedDict
 import asyncio
 from typing import Union
 
+from requests import post
+
 
 from . import crud, schemas, config, database
 from .utils import OperationNotFound
@@ -156,6 +158,17 @@ async def withdraw(tezos_manager, to, amount):
     return await tezos_manager.queue_operation(sender=to, operation=op)
 
 
+def check_calls_per_month(db, contract_id):
+    max_calls = crud.get_max_calls_per_month_by_contract_address(db, contract_id)
+    # If max_calls is -1 means condition is disabled (NO LIMIT)
+    if max_calls == -1:  # type: ignore
+        return True
+    nb_operations_already_made = crud.get_operations_by_contracts_per_month(
+        db, contract_id
+    )
+    return max_calls >= len(nb_operations_already_made)
+
+
 class TezosManager:
     def __init__(self, ptz):
         self.ops_queue = OrderedDict()
@@ -197,6 +210,10 @@ class TezosManager:
                 crud.update_credits_from_contract_address(
                     db, amount=fee, address=contract
                 )
+                print("hey", posted_tx.hash(), fee)
+
+                crud.update_amount_operation(db, posted_tx.hash(), fee)
+
         finally:
             db.close()
 

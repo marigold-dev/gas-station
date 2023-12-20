@@ -1,3 +1,4 @@
+import datetime
 from typing import Optional, List
 from psycopg2.errors import UniqueViolation
 from pydantic import UUID4
@@ -75,10 +76,10 @@ def get_contract(db: Session, contract_id: str):
     """
     Return a models.Contract or raise ContractNotFound exception
     """
-    try:
-        return db.query(models.Contract).get(contract_id)
-    except NoResultFound as e:
-        raise ContractNotFound() from e
+    db_contract: Optional[models.Contract] = db.query(models.Contract).get(contract_id)
+    if db_contract is None:
+        raise ContractNotFound()
+    return db_contract
 
 
 def get_entrypoints(
@@ -247,3 +248,53 @@ def get_credits_from_contract_address(db: Session, contract_address: str):
         return db_credit
     except NoResultFound as e:
         raise ContractNotFound() from e
+
+
+def create_operation(db: Session, operation: schemas.CreateOperation):
+    db_operation = models.Operation(
+        **{
+            "contract_id": operation.contract_id,
+            "entrypoint_id": operation.entrypoint_id,
+            "hash": operation.hash,
+            "status": operation.status,
+        }
+    )
+    db.add(db_operation)
+    db.commit()
+    db.refresh(db_operation)
+    return db_operation
+
+
+def update_amount_operation(db: Session, hash: str, amount: int):
+    db.query(models.Operation).filter(models.Operation.hash == hash).update(
+        {"cost": amount}
+    )
+    db.commit()
+
+
+def get_operations_by_contracts_per_month(db: Session, contract_id):
+    first_day_of_month = datetime.datetime.today().replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
+    db_operations = (
+        db.query(models.Operation)
+        .filter(models.Operation.contract_id == contract_id)
+        .filter(models.Operation.created_at >= first_day_of_month)
+        .all()
+    )
+    return db_operations
+
+
+def get_max_calls_per_month_by_contract_address(db: Session, contract_id):
+    contract = get_contract(db, contract_id)
+    return contract.max_calls_per_month
+
+
+def update_max_calls_per_month_condition(db: Session, max_calls: int, contract_id):
+    db_contract = get_contract(db, contract_id)
+    db.query(models.Contract).filter(models.Contract.id == contract_id).update(
+        {"max_calls_per_month": max_calls}
+    )
+    db.commit()
+    # db_contract.refresh()
+    return db_contract

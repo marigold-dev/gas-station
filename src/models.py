@@ -1,8 +1,9 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from .database import Base
+import datetime
 
 
 # ------- USER ------- #
@@ -37,10 +38,14 @@ class Contract(Base):
     address = Column(String, unique=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     credit_id = Column(UUID(as_uuid=True), ForeignKey("credits.id"))
+    max_calls_per_month = Column(
+        Integer, default=-1
+    )  # TODO must be > 0 ; -1 means disabled
 
     owner = relationship("User", back_populates="contracts")
     entrypoints = relationship("Entrypoint", back_populates="contract")
     credit = relationship("Credit", back_populates="contracts")
+    operations = relationship("Operation", back_populates="contract")
 
 
 # ------- ENTRYPOINT ------- #
@@ -63,6 +68,7 @@ class Entrypoint(Base):
     contract_id = Column(UUID(as_uuid=True), ForeignKey("contracts.id"))
 
     contract = relationship("Contract", back_populates="entrypoints")
+    operations = relationship("Operation", back_populates="entrypoint")
 
 
 # ------- CREDITS ------- #
@@ -82,3 +88,21 @@ class Credit(Base):
 
     owner = relationship("User", back_populates="credits")
     contracts = relationship("Contract", back_populates="credit")
+
+
+# ------- OPERATIONS ------- #
+
+
+class Operation(Base):
+    __tablename__ = "operations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cost = Column(Integer)
+    contract_id = Column(UUID(as_uuid=True), ForeignKey("contracts.id"))
+    entrypoint_id = Column(UUID(as_uuid=True), ForeignKey("entrypoints.id"))
+    hash = Column(String)
+    status = Column(String)  # TODO Enum
+    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow())
+
+    contract = relationship("Contract", back_populates="operations")
+    entrypoint = relationship("Entrypoint", back_populates="operations")
