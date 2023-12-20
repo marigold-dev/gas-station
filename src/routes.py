@@ -335,7 +335,6 @@ async def post_operation(
             raise NotEnoughCallsForThisMonth()
 
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
-        print("result", result)
 
         crud.create_operation(
             db,
