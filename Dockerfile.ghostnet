@@ -14,13 +14,13 @@ RUN pip install pytest
 # Operational stage
 FROM python:3.11-slim
 RUN apt-get update && \
-apt-get install -y libpq-dev libsodium-dev vim procps
+  apt-get install -y libpq-dev libsodium-dev vim procps
 # && \ rm -rf /var/lib/apt/lists/*
 # Get the virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
 ENV PYTHONDONTWRITEBYTECODE=1 \
-PYTHONUNBUFFERED=1 \
-PATH="/opt/venv/bin:$PATH"
+  PYTHONUNBUFFERED=1 \
+  PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 ADD . /app
 EXPOSE 8000
