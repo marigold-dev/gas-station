@@ -12,6 +12,8 @@ from .utils import (
     CreditNotFound,
     EntrypointDisabled,
     EntrypointNotFound,
+    NotEnoughCallsForThisMonth,
+    NotEnoughFunds,
     UserNotFound,
     OperationNotFound,
 )
@@ -315,16 +317,32 @@ async def post_operation(
         # Simulate the operation alone without sending it
         # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
+
         logging.debug(f"Result of operation simulation : {op}")
+
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
+
         logging.debug(f"Estimated fees: {estimated_fees}")
+
         if not tezos.check_credits(db, estimated_fees):
             logging.warning(f"Not enough funds to pay estimated fees.")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough funds."
+            raise NotEnoughFunds(
+                f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
             )
+        if not tezos.check_calls_per_month(db, contract.id):  # type: ignore
+            logging.warning(f"Not enough calls for this month.")
+            raise NotEnoughCallsForThisMonth()
+
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
+        print("result", result)
+
+        crud.create_operation(
+            db,
+            schemas.CreateOperation(
+                contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
+            ),
+        )
     except MichelsonError as e:
         print("Received failing operation, discarding")
         logging.error(f"Invalid operation {e}")
@@ -332,6 +350,15 @@ async def post_operation(
             # FIXME? Is this the best one?
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Operation is invalid",
+        )
+    except NotEnoughFunds as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=f"Not enough funds. {e}"
+        )
+    except NotEnoughCallsForThisMonth:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Not enough calls for this month.",
         )
     except Exception as e:
         logging.error(f"Unknown error on /operation : {e}")
@@ -362,3 +389,18 @@ async def signed_operation(
         sender_address=address, operations=call_data.operations
     )
     return await post_operation(call_data_unsigned, db)
+
+
+@router.put(
+    "/contract/{contract_id}/condition/max_calls", response_model=schemas.Contract
+)
+async def update_max_calls(
+    contract_id: str,
+    body: schemas.UpdateMaxCallsPerMonth,
+    db: Session = Depends(database.get_db),
+):
+    if body.max_calls < -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Max calls cannot be < -1"
+        )
+    return crud.update_max_calls_per_month_condition(db, body.max_calls, contract_id)

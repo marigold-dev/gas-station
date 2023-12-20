@@ -29,3 +29,11 @@ class OperationNotFound(Exception):
 
 class ContractAlreadyRegistered(Exception):
     pass
+
+
+class NotEnoughFunds(Exception):
+    pass
+
+
+class NotEnoughCallsForThisMonth(Exception):
+    pass

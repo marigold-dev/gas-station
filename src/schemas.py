@@ -90,6 +90,7 @@ class Contract(ContractBase):
     name: str
     entrypoints: List[Entrypoint]
     credit: Credit
+    max_calls_per_month: int
 
 
 class ContractCreation(ContractBase):
@@ -113,3 +114,14 @@ class SignedCall(BaseModel):
     operations: list[dict[str, Any]]
     signature: str
     micheline_type: Any
+
+
+class CreateOperation(BaseModel):
+    contract_id: str
+    entrypoint_id: str
+    hash: str
+    status: str
+
+
+class UpdateMaxCallsPerMonth(BaseModel):
+    max_calls: int
