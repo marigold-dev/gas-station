@@ -181,10 +181,10 @@
                     <main>
                         <h1 id="sdks"><a class="header" href="#sdks">SDKs</a></h1>
 <h2 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h2>
-<p>To enhance the user experience, we have developed two SDKs (for now) to integrate into your web applications. They will facilitate easy interaction with the Gas Station. Currently, we have developed an SDK for Typescript and another one for Unity.</p>
+<p>We propose two SDKs (in TypeScript and in Unity) to use the Gas Station from your applications.</p>
 <h3 id="typescript"><a class="header" href="#typescript">Typescript</a></h3>
 <h4 id="installation"><a class="header" href="#installation">Installation</a></h4>
-<p>To install the Typescript SDK, run :</p>
+<p>To install the Typescript SDK in your project, run:</p>
 <pre><code class="language-bash">npm install --save @marigold-dev/gas-station-lib
 </code></pre>
 <h4 id="explanations"><a class="header" href="#explanations">Explanations</a></h4>
@@ -207,9 +207,11 @@
 </code></pre>
 <p>This method then prepares the HTTP request and sends it to the <code>/operation</code> endpoint of the API, which processes the operation.</p>
 <ul>
-<li><code>postOperations</code> also takes a <code>sender</code> and an array of <code>Operation</code>, allowing you to send multiple operations at once.</li>
+<li><code>postOperations</code> also takes a <code>sender</code> and an array of <code>Operation</code>, allowing you to send multiple
+operations at once. These operations will be treated atomically by the API: if the simulation of
+one operation fails, then they are all discarded.</li>
 </ul>
-<p>The <code>PermitContract</code> class allows the generation of a permit <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a> for a given contract.</p>
+<p>The <code>PermitContract</code> class allows the generation of a off-chain permit <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a> for a contract implementing TZIP-17.</p>
 <blockquote>
 <p>A permit is an authorization to call a specific endpoint of a smart contract with a specified parameter on behalf of a given address. This authorization may have an expiration. It is particularly useful for handling FA tokens when the user has ownership (transfer, update_operation, approve).</p>
 </blockquote>
@@ -222,9 +224,9 @@
   transfer_hash: string, // the hash of the transfer operation
 }
 </code></pre>
-<p>After calling <code>generatePermit</code>, you need to have the token owner sign the bytes to finalize the permit.</p>
+<p>After calling <code>generatePermit</code>, you need to ask the token owner for their signature.</p>
 <ul>
-<li><code>permitCall</code> allows calling the <code>permit</code> entrypoint on the target contract. This registers the permit in the contract storage (refer to <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a>). This method takes an object of type:</li>
+<li><code>permitCall</code> generates the permit operation using the <code>permit</code> entrypoint on the target contract. This method takes an object of type:</li>
 </ul>
 <pre><code class="language-ts">type PermitOperation = {
   publicKey: string;
@@ -232,14 +234,14 @@
   transferHash: string;
 };
 </code></pre>
-<p>and returns an operation of type <code>TransferParams</code>.</p>
+<p>and returns an operation of type <code>TransferParams</code>, which can be sent using the GasStation class.</p>
 <h4 id="usage"><a class="header" href="#usage">Usage</a></h4>
-<p>To begin, you need to import and initialize the <code>GasStation</code> object from the SDK:</p>
+<p>First import and initialize the <code>GasStation</code> object from the SDK:</p>
 <pre><code class="language-ts">import { GasStation } from '@marigold-dev/gas-station-lib'
 
 const gasApi = new GasStation()
 </code></pre>
-<p>ℹ️ NOTE: By default, the Gas Station used by the SDK is on Ghostnet but you can also provide a <code>apiURL</code> like:</p>
+<p>ℹ️ NOTE: By default, the Gas Station used by the SDK is the Marigold one on Ghostnet but you can also provide a <code>apiURL</code> like:</p>
 <pre><code class="language-ts">import { GasStation, GAS_STATION_PUBLIC_API_GHOSTNET} from '@marigold-dev/gas-station-lib'
 
 const gasApi = new GasStation({

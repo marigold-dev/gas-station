@@ -182,35 +182,47 @@
                     <main>
                         <h1 id="welcome-on-gas-station"><a class="header" href="#welcome-on-gas-station">Welcome on Gas Station</a></h1>
 <h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
-<p>The Gas Station is a tool designed for developers aiming to provide sponsored transactions to their users. It can be used to facilitate user onboarding or implementing a specific economic model (e.g., the user can mint a NFT freely, but pays a fee when reselling it).</p>
-<p>The Gas Station would typically be used by video game developers seeking to subsidize activities for users without any tez in their wallets. It does not require these users to do any transaction or reveal their account, as the Gas Station account independently processes those transactions. However, it's important to note that this workflow may necessitate the use of specific smart contract patterns, such as permit (TZIP 17).</p>
-<p>Currently, the API URL for Ghostnet is: <a href="https://ghostnet.gas-station-api.marigold.dev">https://ghostnet.gas-station-api.marigold.dev</a>. The Gas Station is not yet available on the Mainnet.</p>
+<p>The Gas Station is a tool allowing developers to sponsor the transactions of their users. It can be
+used to facilitate user onboarding, or to implement a specific economic model (e.g., users can
+mint a NFT freely, but pay a fee when reselling it) which does not need the user to possess tez.</p>
+<p>The Gas Station would typically be used by video game developers to subsidize activities for
+users. It does not require these users to do any transaction or reveal their account, as the Gas
+Station account independently processes those transactions. However, it's important to note that
+this workflow may necessitate the use of specific smart contract patterns, such as permit (TZIP 17).</p>
+<p>Currently, the API URL for Ghostnet is:
+<a href="https://ghostnet.gas-station-api.marigold.dev">https://ghostnet.gas-station-api.marigold.dev</a>. The
+Gas Station is not yet available on the Mainnet.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="gas-station-webapp"><a class="header" href="#gas-station-webapp">Gas Station Webapp</a></h1>
-<p>To enhance the user experience with the Gas Station, particularly in interacting with contracts and managing the budget for fee payments, we have developed a web app, available <a href="https://ghostnet.gas-station.marigold.dev/">here</a>.</p>
+<p>The Gas Station webapp allows developers to manage sponsored contracts and operations as well as
+their budget. It also allows to express basic conditions on the spending of credits, for instance by
+giving a maximum budget per day.</p>
+<p>The webapp is hosted by Marigold: <a href="https://ghostnet.gas-station.marigold.dev/">Gas Station webapp on Ghostnet</a>.</p>
 <p>⚠️ Note: currently available only on Ghostnet ⚠️</p>
 <h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
 <h3 id="wallet-connection"><a class="header" href="#wallet-connection">Wallet connection</a></h3>
 <p>Like all dApps, one of the first things to do is connect your wallet by clicking on the button in the top right corner.</p>
 <p><img src="./assets/wallet_connection.png" alt="Wallet connection" /></p>
 <h3 id="your-contracts"><a class="header" href="#your-contracts">Your contracts</a></h3>
-<p>On the homepage, you can find all your contracts registered on the Gas Station along with their activated entrypoints.</p>
+<p>The homepage lists all the contracts registered in the Gas Station as well as their entrypoints.
+Entrypoints can be activated or deactivated, depending on if the operations targeting those entrypoints
+should be sponsored or not.</p>
 <p><img src="./assets/homepage.png" alt="Homepage" /></p>
 <h3 id="add-a-new-contract"><a class="header" href="#add-a-new-contract">Add a new contract</a></h3>
-<p>To add a new contract, click on <code>Add contract</code> and fill in the required information. Start by entering the contract address to retrieve the associated entrypoints for your contract. Then, provide a name and activate the entrypoints for which you want to sponsor.</p>
+<p>To add a new contract, click on <code>Add contract</code> and fill in the required information. Start by entering the contract address to retrieve the associated entrypoints for your contract. Then, name the contract and activate the entrypoints which you want to sponsor.</p>
 <p><img src="./assets/add-contract.png" alt="Add contract" /></p>
 <h3 id="add-credits-to-your-vault"><a class="header" href="#add-credits-to-your-vault">Add credits to your vault</a></h3>
-<p>To add credits to your vault, go to the <code>My credits</code> page. Enter the amount of XTZ you want to send to your vault and confirm. After a few seconds, your vault balance and overall balance will update, and the transfer will be effective.</p>
+<p>The Gas Station sponsors operations to your contracts using the tez you have put in a vault. To add credits to your vault, go to the <code>My credits</code> page. Enter the amount of tez you want to send and confirm. After a few seconds, your vault balance and overall balance will be updated.</p>
 <p><img src="./assets/add-credits.png" alt="Add credits" /></p>
-<h3 id="withdraw"><a class="header" href="#withdraw">Withdraw</a></h3>
-<p>You can also withdraw XTZ from your vault. On the <code>My credits</code> page, enter the amount of XTZ you want to withdraw and confirm. You'll need to sign the transaction with your wallet to ensure that the credits go to the correct address.</p>
+<h3 id="withdraw-credits"><a class="header" href="#withdraw-credits">Withdraw credits</a></h3>
+<p>You can also withdraw tez from your vault. On the <code>My credits</code> page, enter the amount of tez you want to withdraw and confirm. For security reasons, we require a signature which depends on the vault, the amount, and a withdraw counter which is stored in the database.</p>
 <h3 id="test"><a class="header" href="#test">Test</a></h3>
 <p>Once the contract is added and credits are transferred to your vault, you can integrate the Gas Station into your dApps by following this <a href="./tutorial.html">guide</a>. This will allow you to test the seamless integration of the Gas Station with your dApps.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sdks"><a class="header" href="#sdks">SDKs</a></h1>
 <h2 id="getting-started"><a class="header" href="#getting-started">Getting started</a></h2>
-<p>To enhance the user experience, we have developed two SDKs (for now) to integrate into your web applications. They will facilitate easy interaction with the Gas Station. Currently, we have developed an SDK for Typescript and another one for Unity.</p>
+<p>We propose two SDKs (in TypeScript and in Unity) to use the Gas Station from your applications.</p>
 <h3 id="typescript"><a class="header" href="#typescript">Typescript</a></h3>
 <h4 id="installation"><a class="header" href="#installation">Installation</a></h4>
-<p>To install the Typescript SDK, run :</p>
+<p>To install the Typescript SDK in your project, run:</p>
 <pre><code class="language-bash">npm install --save @marigold-dev/gas-station-lib
 </code></pre>
 <h4 id="explanations"><a class="header" href="#explanations">Explanations</a></h4>
@@ -233,9 +245,11 @@
 </code></pre>
 <p>This method then prepares the HTTP request and sends it to the <code>/operation</code> endpoint of the API, which processes the operation.</p>
 <ul>
-<li><code>postOperations</code> also takes a <code>sender</code> and an array of <code>Operation</code>, allowing you to send multiple operations at once.</li>
+<li><code>postOperations</code> also takes a <code>sender</code> and an array of <code>Operation</code>, allowing you to send multiple
+operations at once. These operations will be treated atomically by the API: if the simulation of
+one operation fails, then they are all discarded.</li>
 </ul>
-<p>The <code>PermitContract</code> class allows the generation of a permit <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a> for a given contract.</p>
+<p>The <code>PermitContract</code> class allows the generation of a off-chain permit <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a> for a contract implementing TZIP-17.</p>
 <blockquote>
 <p>A permit is an authorization to call a specific endpoint of a smart contract with a specified parameter on behalf of a given address. This authorization may have an expiration. It is particularly useful for handling FA tokens when the user has ownership (transfer, update_operation, approve).</p>
 </blockquote>
@@ -248,9 +262,9 @@
   transfer_hash: string, // the hash of the transfer operation
 }
 </code></pre>
-<p>After calling <code>generatePermit</code>, you need to have the token owner sign the bytes to finalize the permit.</p>
+<p>After calling <code>generatePermit</code>, you need to ask the token owner for their signature.</p>
 <ul>
-<li><code>permitCall</code> allows calling the <code>permit</code> entrypoint on the target contract. This registers the permit in the contract storage (refer to <a href="https://tzip.tezosagora.org/proposal/tzip-17">TZIP-17</a>). This method takes an object of type:</li>
+<li><code>permitCall</code> generates the permit operation using the <code>permit</code> entrypoint on the target contract. This method takes an object of type:</li>
 </ul>
 <pre><code class="language-ts">type PermitOperation = {
   publicKey: string;
@@ -258,14 +272,14 @@
   transferHash: string;
 };
 </code></pre>
-<p>and returns an operation of type <code>TransferParams</code>.</p>
+<p>and returns an operation of type <code>TransferParams</code>, which can be sent using the GasStation class.</p>
 <h4 id="usage-1"><a class="header" href="#usage-1">Usage</a></h4>
-<p>To begin, you need to import and initialize the <code>GasStation</code> object from the SDK:</p>
+<p>First import and initialize the <code>GasStation</code> object from the SDK:</p>
 <pre><code class="language-ts">import { GasStation } from '@marigold-dev/gas-station-lib'
 
 const gasApi = new GasStation()
 </code></pre>
-<p>ℹ️ NOTE: By default, the Gas Station used by the SDK is on Ghostnet but you can also provide a <code>apiURL</code> like:</p>
+<p>ℹ️ NOTE: By default, the Gas Station used by the SDK is the Marigold one on Ghostnet but you can also provide a <code>apiURL</code> like:</p>
 <pre><code class="language-ts">import { GasStation, GAS_STATION_PUBLIC_API_GHOSTNET} from '@marigold-dev/gas-station-lib'
 
 const gasApi = new GasStation({
@@ -289,7 +303,7 @@ const gasApi = new GasStation({
 <p>🚧 Work in Progress 🚧</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="api"><a class="header" href="#api">API</a></h1>
 <iframe width="1080" height="915" src="https://ghostnet.gas-station-api.marigold.dev/docs"></iframe><div style="break-before: page; page-break-before: always;"></div><h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
-<p>To understand the potential and how to use the Gas Station, let's walk through the simple example of NFTs available at this <a href="https://ghostnet.gas-station-nft-example.marigold.dev">address</a>.</p>
+<p>This chapter walks through a simple example of a dapp using the Gas Station. You can <a href="https://ghostnet.gas-station-nft-example.marigold.dev">try it online at this address</a>.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
 <p>The first step is to retrieve the code template located <a href="https://github.com/marigold-dev/gas-station-nft-example-template">here</a>.
 Once retrieved, you can run the following commands:</p>
@@ -301,11 +315,16 @@ npm run check
 <pre><code class="language-bash">npm run dev
 </code></pre>
 <p>The files of interest are located in <code>src/lib</code>. You will find Svelte components and a <code>tezos.ts</code> file that contains utility functions such as wallet connection, etc.</p>
-<p>We will writing some pieces of code in <code>src/lib/MintingComponent.svelte</code> and <code>src/lib/StakingComponent.svelte</code>.
+<p>To distinguish between a simple call to the Gas Station and a more complex examples involving permits, we develop two distinct components, <code>src/lib/MintingComponent.svelte</code> and <code>src/lib/StakingComponent.svelte</code>.
 Let's go ! 💪</p>
-<h2 id="minting"><a class="header" href="#minting">Minting</a></h2>
+<h2 id="minting-an-nft"><a class="header" href="#minting-an-nft">Minting an NFT</a></h2>
 <p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations"><code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code></a>.
-The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information <a href="./library.html">here</a>.</p>
+This contract has an admin, which is the only account allowed to mint NFTs. This is the same
+settings as you would have in a video game, where the game decides when to mint an NFT for a user.
+In this case, the contract admin has been set to be the Gas Station account, because the <code>mint</code>
+entrypoint is always going to be called by the Gas Station.</p>
+<p>The goal here is for the user to initiate the mint action and retrieve their NFT without having to
+pay gas fees. For this, we will use the <a href="./library.html">TypeScript SDK</a>.</p>
 <p>First, we'll setup the GasStation SDK as follows:</p>
 <pre><code class="language-ts">const gasStationAPI = new GasStation()
 </code></pre>
@@ -325,9 +344,9 @@ The goal here is for the user to initiate the mint action and retrieve their NFT
 <p>Using Taquito, we forge a transfer operation on the <code>mint_token</code> entrypoint.
 The parameters for this entrypoint are:</p>
 <ul>
-<li><code>owner</code> : the future owner of the NFT</li>
-<li><code>token_id</code> : l'ID of the token (NFT) that we are going to mint</li>
-<li><code>amount_</code> : the quantity of tokens we want to mint.</li>
+<li><code>owner</code>: the future owner of the NFT</li>
+<li><code>token_id</code>: ID of the token that we are going to mint</li>
+<li><code>amount_</code>: the quantity of tokens we want to mint.</li>
 </ul>
 <p>Finally, once the operation is forged, we can send it to the Gas Station API:</p>
 <pre><code class="language-ts">const response = await gasStationAPI.postOperation(userAddress, {
@@ -337,8 +356,13 @@ The parameters for this entrypoint are:</p>
 </code></pre>
 <p>The operation will take a few seconds to be processed by the Gas Station (usually 12/15 seconds) if everything is correct.
 If an error occurs (insufficient funds, authorization issue for minting the NFT, etc.), an error code will be returned, which you can handle in your dApp to inform the user.</p>
-<h2 id="staking"><a class="header" href="#staking">Staking</a></h2>
-<p>For staking, we need a permit. Staking involves transferring our freshly minted NFT to the contract. As we own the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
+<h2 id="staking-an-nft"><a class="header" href="#staking-an-nft">Staking an NFT</a></h2>
+<p>Minting NFTs from a single address is a simple enough example to start. However, a complete
+application would typically offer the possibility for the users to transfer or sell their NFTs. As
+final users do not have tez in their wallet, all the transactions are posted by the Gas Station.</p>
+<p>Despite this centralization, it is still possible to maintain security and non-custodiality using
+permits. In this section, we call <em>staking</em> the operation of sending an NFT to a contract. As the
+user ownsthe NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
 <p>To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information <a href="./library.html">here</a>)</p>
 <p>To start, let's initialize the <code>GasStation</code> and <code>PermitContract</code>  classes from the SDK:</p>
 <p>ℹ️ <code>GasStation</code> class will target the Gas Station deployed on Ghostnet by default.</p>
@@ -394,7 +418,7 @@ const stakingOperation = await stakingContract.methods.stake(
         userAddress
       ).toTransferParams();
 </code></pre>
-<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is an environment variable containing the contract's address implementing the staking contract.</p>
+<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is an environment variable containing the staking contract's address.</p>
 <p>All that remains is to send the operation to the Gas Station to have the gas fees covered:</p>
 <pre><code class="language-ts">const response = await gasStationApi.postOperations(userAddress,
           [
@@ -408,10 +432,14 @@ const stakingOperation = await stakingContract.methods.stake(
             }
           ]);
 </code></pre>
-<p>Here, we use <code>postOperations</code> to submit a batch of operations. This batch contains the operation to register the permit and the staking operation. When calling the staking contract's <code>stake</code> entrypoint, the permit will be revealed and consumed.</p>
+<p>Here, we use <code>postOperations</code> to submit a batch of operations. This batch contains the operation to
+register the permit and the staking operation. When calling the staking contract's <code>stake</code>
+entrypoint, the permit will be revealed and consumed.</p>
 <p>Similar to the minting operation, the Gas Station will respond in a few tens of seconds.</p>
 <h2 id="conclusion"><a class="header" href="#conclusion">Conclusion</a></h2>
-<p>We have some pieces of code allowing a user without any XTZ to mint an NFT and stake it on the contract. This is possible thanks to the Gas Station, which relays the transaction by paying the fees.</p>
+<p>This simple example shows how a user without any tez can mint an NFT and transfer it to another
+contract in a secure way. This is possible thanks to the Gas Station, which relays the transaction
+by paying the fees.</p>
 <p>Feel free to send us your feedback and comments on this tutorial. 😃</p>
 
                     </main>
