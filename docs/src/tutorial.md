@@ -1,6 +1,6 @@
 # Tutorial
 
-To understand the potential and how to use the Gas Station, let's walk through the simple example of NFTs available at this [address](https://ghostnet.gas-station-nft-example.marigold.dev).
+This chapter walks through a simple example of a dapp using the Gas Station. You can [try it online at this address](https://ghostnet.gas-station-nft-example.marigold.dev).
 
 ## Template
 
@@ -21,13 +21,19 @@ npm run dev
 
 The files of interest are located in `src/lib`. You will find Svelte components and a `tezos.ts` file that contains utility functions such as wallet connection, etc.
 
-We will writing some pieces of code in `src/lib/MintingComponent.svelte` and `src/lib/StakingComponent.svelte`.
+To distinguish between a simple call to the Gas Station and a more complex examples involving permits, we develop two distinct components, `src/lib/MintingComponent.svelte` and `src/lib/StakingComponent.svelte`.
 Let's go ! 💪
 
-## Minting
+## Minting an NFT
 
 We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: [`KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx`](https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations).
-The goal here is for the user to initiate the mint action and retrieve their NFT without having to pay gas fees. For this, we will use the TypeScript SDK, and you can find more information [here](./library.md).
+This contract has an admin, which is the only account allowed to mint NFTs. This is the same
+settings as you would have in a video game, where the game decides when to mint an NFT for a user.
+In this case, the contract admin has been set to be the Gas Station account, because the `mint`
+entrypoint is always going to be called by the Gas Station.
+
+The goal here is for the user to initiate the mint action and retrieve their NFT without having to
+pay gas fees. For this, we will use the [TypeScript SDK](./library.md).
 
 First, we'll setup the GasStation SDK as follows:
 ```ts
@@ -56,9 +62,9 @@ const mintOperation = await contract.methodsObject.mint_token([{
 
 Using Taquito, we forge a transfer operation on the `mint_token` entrypoint.
 The parameters for this entrypoint are:
-- `owner` : the future owner of the NFT
-- `token_id` : l'ID of the token (NFT) that we are going to mint
-- `amount_` : the quantity of tokens we want to mint.
+- `owner`: the future owner of the NFT
+- `token_id`: ID of the token that we are going to mint
+- `amount_`: the quantity of tokens we want to mint.
 
 Finally, once the operation is forged, we can send it to the Gas Station API:
 ```ts
@@ -72,9 +78,15 @@ The operation will take a few seconds to be processed by the Gas Station (usuall
 If an error occurs (insufficient funds, authorization issue for minting the NFT, etc.), an error code will be returned, which you can handle in your dApp to inform the user.
 
 
-## Staking
+## Staking an NFT
 
-For staking, we need a permit. Staking involves transferring our freshly minted NFT to the contract. As we own the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.
+Minting NFTs from a single address is a simple enough example to start. However, a complete
+application would typically offer the possibility for the users to transfer or sell their NFTs. As
+final users do not have tez in their wallet, all the transactions are posted by the Gas Station.
+
+Despite this centralization, it is still possible to maintain security and non-custodiality using
+permits. In this section, we call _staking_ the operation of sending an NFT to a contract. As the
+user ownsthe NFT, it is appropriate to sign a permit (authorization) to perform this transfer.
 
 To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information [here](./library.md))
 
@@ -147,7 +159,7 @@ const stakingOperation = await stakingContract.methods.stake(
         userAddress
       ).toTransferParams();
 ```
-ℹ️ `PUBLIC_STAKING_CONTRACT` is an environment variable containing the contract's address implementing the staking contract.
+ℹ️ `PUBLIC_STAKING_CONTRACT` is an environment variable containing the staking contract's address.
 
 All that remains is to send the operation to the Gas Station to have the gas fees covered:
 
@@ -165,13 +177,16 @@ const response = await gasStationApi.postOperations(userAddress,
           ]);
 ```
 
-Here, we use `postOperations` to submit a batch of operations. This batch contains the operation to register the permit and the staking operation. When calling the staking contract's `stake` entrypoint, the permit will be revealed and consumed.
+Here, we use `postOperations` to submit a batch of operations. This batch contains the operation to
+register the permit and the staking operation. When calling the staking contract's `stake`
+entrypoint, the permit will be revealed and consumed.
 
 Similar to the minting operation, the Gas Station will respond in a few tens of seconds.
 
 ## Conclusion
 
-We have some pieces of code allowing a user without any XTZ to mint an NFT and stake it on the contract. This is possible thanks to the Gas Station, which relays the transaction by paying the fees.
-
+This simple example shows how a user without any tez can mint an NFT and transfer it to another
+contract in a secure way. This is possible thanks to the Gas Station, which relays the transaction
+by paying the fees.
 
 Feel free to send us your feedback and comments on this tutorial. 😃
