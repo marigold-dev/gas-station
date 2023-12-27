@@ -2,13 +2,13 @@
 
 ## Getting started
 
-To enhance the user experience, we have developed two SDKs (for now) to integrate into your web applications. They will facilitate easy interaction with the Gas Station. Currently, we have developed an SDK for Typescript and another one for Unity.
+We propose two SDKs (in TypeScript and in Unity) to use the Gas Station from your applications.
 
 ### Typescript
 
 #### Installation
 
-To install the Typescript SDK, run :
+To install the Typescript SDK in your project, run:
 
 ```bash
 npm install --save @marigold-dev/gas-station-lib
@@ -36,10 +36,11 @@ export type Operation = {
 ```
 This method then prepares the HTTP request and sends it to the `/operation` endpoint of the API, which processes the operation.
 
-- `postOperations` also takes a `sender` and an array of `Operation`, allowing you to send multiple operations at once.
+- `postOperations` also takes a `sender` and an array of `Operation`, allowing you to send multiple
+  operations at once. These operations will be treated atomically by the API: if the simulation of
+  one operation fails, then they are all discarded.
 
-
-The `PermitContract` class allows the generation of a permit [TZIP-17](https://tzip.tezosagora.org/proposal/tzip-17) for a given contract.
+The `PermitContract` class allows the generation of a off-chain permit [TZIP-17](https://tzip.tezosagora.org/proposal/tzip-17) for a contract implementing TZIP-17.
 
 > A permit is an authorization to call a specific endpoint of a smart contract with a specified parameter on behalf of a given address. This authorization may have an expiration. It is particularly useful for handling FA tokens when the user has ownership (transfer, update_operation, approve).
 
@@ -52,9 +53,9 @@ This class has two methods:
 }
 ```
 
-After calling `generatePermit`, you need to have the token owner sign the bytes to finalize the permit.
+After calling `generatePermit`, you need to ask the token owner for their signature.
 
-- `permitCall` allows calling the `permit` entrypoint on the target contract. This registers the permit in the contract storage (refer to [TZIP-17](https://tzip.tezosagora.org/proposal/tzip-17)). This method takes an object of type:
+- `permitCall` generates the permit operation using the `permit` entrypoint on the target contract. This method takes an object of type:
 ```ts
 type PermitOperation = {
   publicKey: string;
@@ -62,18 +63,18 @@ type PermitOperation = {
   transferHash: string;
 };
 ```
-and returns an operation of type `TransferParams`.
+and returns an operation of type `TransferParams`, which can be sent using the GasStation class.
 
 #### Usage
 
-To begin, you need to import and initialize the `GasStation` object from the SDK:
+First import and initialize the `GasStation` object from the SDK:
 ```ts
 import { GasStation } from '@marigold-dev/gas-station-lib'
 
 const gasApi = new GasStation()
 ```
 
-ℹ️ NOTE: By default, the Gas Station used by the SDK is on Ghostnet but you can also provide a `apiURL` like:
+ℹ️ NOTE: By default, the Gas Station used by the SDK is the Marigold one on Ghostnet but you can also provide a `apiURL` like:
 ```ts
 import { GasStation, GAS_STATION_PUBLIC_API_GHOSTNET} from '@marigold-dev/gas-station-lib'
 
