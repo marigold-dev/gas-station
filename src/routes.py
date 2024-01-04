@@ -1,4 +1,3 @@
-from math import log
 from fastapi import APIRouter, HTTPException, status, Depends
 import asyncio
 
@@ -12,10 +11,11 @@ from .utils import (
     CreditNotFound,
     EntrypointDisabled,
     EntrypointNotFound,
-    NotEnoughCallsForThisMonth,
+    TooManyCallsForThisMonth,
     NotEnoughFunds,
     UserNotFound,
     OperationNotFound,
+    check_calls_per_month,
 )
 from .config import logging
 
@@ -330,9 +330,9 @@ async def post_operation(
             raise NotEnoughFunds(
                 f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
             )
-        if not tezos.check_calls_per_month(db, contract.id):  # type: ignore
-            logging.warning(f"Not enough calls for this month.")
-            raise NotEnoughCallsForThisMonth()
+        if not check_calls_per_month(db, contract.id):  # type: ignore
+            logging.warning(f"Too many calls made for this contract this month.")
+            raise TooManyCallsForThisMonth()
 
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
 
@@ -354,10 +354,10 @@ async def post_operation(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=f"Not enough funds. {e}"
         )
-    except NotEnoughCallsForThisMonth:
+    except TooManyCallsForThisMonth:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Not enough calls for this month.",
+            detail=f"Too many calls made for this contract this month.",
         )
     except Exception as e:
         logging.error(f"Unknown error on /operation : {e}")
