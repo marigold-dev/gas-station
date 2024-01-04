@@ -117,6 +117,7 @@ class SignedCall(BaseModel):
 
 
 class CreateOperation(BaseModel):
+    user_address: str
     contract_id: str
     entrypoint_id: str
     hash: str
