@@ -253,6 +253,7 @@ def get_credits_from_contract_address(db: Session, contract_address: str):
 def create_operation(db: Session, operation: schemas.CreateOperation):
     db_operation = models.Operation(
         **{
+            "user_address": operation.user_address,
             "contract_id": operation.contract_id,
             "entrypoint_id": operation.entrypoint_id,
             "hash": operation.hash,
@@ -298,3 +299,12 @@ def update_max_calls_per_month_condition(db: Session, max_calls: int, contract_i
     db.commit()
     # db_contract.refresh()
     return db_contract
+
+
+def check_calls_per_month(db, contract_id):
+    max_calls = get_max_calls_per_month_by_contract_address(db, contract_id)
+    # If max_calls is -1 means condition is disabled (NO LIMIT)
+    if max_calls == -1:  # type: ignore
+        return True
+    nb_operations_already_made = get_operations_by_contracts_per_month(db, contract_id)
+    return max_calls >= len(nb_operations_already_made)

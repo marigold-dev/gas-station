@@ -15,7 +15,6 @@ from .utils import (
     NotEnoughFunds,
     UserNotFound,
     OperationNotFound,
-    check_calls_per_month,
 )
 from .config import logging
 
@@ -330,7 +329,7 @@ async def post_operation(
             raise NotEnoughFunds(
                 f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
             )
-        if not check_calls_per_month(db, contract.id):  # type: ignore
+        if not crud.check_calls_per_month(db, contract.id):  # type: ignore
             logging.warning(f"Too many calls made for this contract this month.")
             raise TooManyCallsForThisMonth()
 
@@ -339,7 +338,7 @@ async def post_operation(
         crud.create_operation(
             db,
             schemas.CreateOperation(
-                contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
+                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
             ),
         )
     except MichelsonError as e:

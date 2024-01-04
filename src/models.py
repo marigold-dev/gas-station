@@ -98,6 +98,7 @@ class Operation(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     cost = Column(Integer)
+    user_address = Column(String)
     contract_id = Column(UUID(as_uuid=True), ForeignKey("contracts.id"))
     entrypoint_id = Column(UUID(as_uuid=True), ForeignKey("entrypoints.id"))
     hash = Column(String)
