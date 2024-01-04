@@ -15,7 +15,6 @@ from .utils import (
     NotEnoughFunds,
     UserNotFound,
     OperationNotFound,
-    check_calls_per_month,
 )
 from .config import logging
 
