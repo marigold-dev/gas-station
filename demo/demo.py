@@ -23,6 +23,12 @@ def deploy_permit(admin):
         }).encode("utf-8")
     }
 
+    fa2_initial_storage["extension"]["admins"] = set([
+        "tz1f9GnShd1crmLSAxw1QS458vknyxQwXETc",  # Gas station main dev
+        "tz1WpCAoUsSXCQNtyXKYMWchG5fiK69tCRLs",  # Marigold GS staging
+        "tz1gF6mwvkW2BQQR6WWUjyrRRmfN3KBJBdTa",  # Marigold GS ghostnet
+    ])
+
     fa2_initial_storage["token_metadata"] = {
         0: {
             "token_id": 0,
@@ -108,7 +114,6 @@ def deploy_permit(admin):
         i: 0 for i in range(len(fa2_initial_storage["token_metadata"]))
     }
 
-    fa2_initial_storage["extension"]["admin"] = admin.key.public_key_hash()
     fa2_initial_storage["extension"]["max_expiry"] = 3600
     fa2_initial_storage["extension"]["default_expiry"] = 3600
     orig = admin.origination(fa2_contract.script(
