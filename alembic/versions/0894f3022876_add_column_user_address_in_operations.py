@@ -1,7 +1,7 @@
 """add-column-user-address-in-operations
 
 Revision ID: 0894f3022876
-Revises: a6daf80cf2a0
+Revises: 899856207a89
 Create Date: 2024-01-04 16:56:40.833512
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = "0894f3022876"
-down_revision: Union[str, None] = "a6daf80cf2a0"
+down_revision: Union[str, None] = "899856207a89"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
