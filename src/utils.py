@@ -1,4 +1,6 @@
 # -- EXCEPTIONS --
+
+
 class UserNotFound(Exception):
     pass
 
@@ -8,6 +10,10 @@ class ContractNotFound(Exception):
 
 
 class EntrypointNotFound(Exception):
+    pass
+
+
+class EntrypointDisabled(Exception):
     pass
 
 
@@ -24,4 +30,12 @@ class OperationNotFound(Exception):
 
 
 class ContractAlreadyRegistered(Exception):
+    pass
+
+
+class NotEnoughFunds(Exception):
+    pass
+
+
+class TooManyCallsForThisMonth(Exception):
     pass

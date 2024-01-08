@@ -24,5 +24,6 @@ PATH="/opt/venv/bin:$PATH"
 WORKDIR /app
 ADD . /app
 EXPOSE 8000
+
 # Run the command to start uWSGI
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT [ "./start.sh" ]

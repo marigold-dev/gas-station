@@ -1,4 +1,3 @@
-from math import log
 from fastapi import APIRouter, HTTPException, status, Depends
 import asyncio
 
@@ -10,7 +9,10 @@ from .utils import (
     ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
+    EntrypointDisabled,
     EntrypointNotFound,
+    TooManyCallsForThisMonth,
+    NotEnoughFunds,
     UserNotFound,
     OperationNotFound,
 )
@@ -135,7 +137,9 @@ async def withdraw_credits(
         )
     # We increment the counter even if the withdraw fails to prevent
     # the counter from being used again immediately.
-    crud.update_user_withdraw_counter(db, str(user.id), withdraw.withdraw_counter + 1)
+    counter = crud.update_user_withdraw_counter(
+        db, str(user.id), withdraw.withdraw_counter + 1
+    )
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
         logging.debug(f"Start to confirm withdraw for {result['transaction_hash']}")
@@ -147,7 +151,7 @@ async def withdraw_credits(
             )
         )
 
-    return result
+    return {**result, "counter": counter}
 
 
 # Users and credits getters
@@ -292,28 +296,51 @@ async def post_operation(
         entrypoint_name = operation["parameters"]["entrypoint"]
 
         try:
-            crud.get_entrypoint(db, str(contract.address), entrypoint_name)
+            entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
+            if not entrypoint.is_enabled:
+                raise EntrypointDisabled()
         except EntrypointNotFound:
             logging.warning(f"Entrypoint {entrypoint_name} is not found")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not found",
             )
+        except EntrypointDisabled:
+            logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Entrypoint {entrypoint_name} is disabled.",
+            )
 
     try:
         # Simulate the operation alone without sending it
         # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
+
         logging.debug(f"Result of operation simulation : {op}")
+
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
-        logging.debug(f"Estimated fees for {op.hash()}: {estimated_fees}")
+
+        logging.debug(f"Estimated fees: {estimated_fees}")
+
         if not tezos.check_credits(db, estimated_fees):
             logging.warning(f"Not enough funds to pay estimated fees.")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Not enough funds."
+            raise NotEnoughFunds(
+                f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
             )
+        if not crud.check_calls_per_month(db, contract.id):  # type: ignore
+            logging.warning(f"Too many calls made for this contract this month.")
+            raise TooManyCallsForThisMonth()
+
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
+
+        crud.create_operation(
+            db,
+            schemas.CreateOperation(
+                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
+            ),
+        )
     except MichelsonError as e:
         print("Received failing operation, discarding")
         logging.error(f"Invalid operation {e}")
@@ -321,6 +348,15 @@ async def post_operation(
             # FIXME? Is this the best one?
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Operation is invalid",
+        )
+    except NotEnoughFunds as e:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=f"Not enough funds. {e}"
+        )
+    except TooManyCallsForThisMonth:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Too many calls made for this contract this month.",
         )
     except Exception as e:
         logging.error(f"Unknown error on /operation : {e}")
@@ -351,3 +387,18 @@ async def signed_operation(
         sender_address=address, operations=call_data.operations
     )
     return await post_operation(call_data_unsigned, db)
+
+
+@router.put(
+    "/contract/{contract_id}/condition/max_calls", response_model=schemas.Contract
+)
+async def update_max_calls(
+    contract_id: str,
+    body: schemas.UpdateMaxCallsPerMonth,
+    db: Session = Depends(database.get_db),
+):
+    if body.max_calls < -1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Max calls cannot be < -1"
+        )
+    return crud.update_max_calls_per_month_condition(db, body.max_calls, contract_id)
