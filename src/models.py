@@ -57,6 +57,7 @@ class Contract(Base):
     entrypoints = relationship("Entrypoint", back_populates="contract")
     credit = relationship("Credit", back_populates="contracts")
     operations = relationship("Operation", back_populates="contract")
+    conditions = relationship("Condition", back_populates="contract")
 
 
 # ------- ENTRYPOINT ------- #
@@ -80,6 +81,7 @@ class Entrypoint(Base):
 
     contract = relationship("Contract", back_populates="entrypoints")
     operations = relationship("Operation", back_populates="entrypoint")
+    conditions = relationship("Condition", back_populates="entrypoint")
 
 
 # ------- CREDITS ------- #
@@ -99,6 +101,7 @@ class Credit(Base):
 
     owner = relationship("User", back_populates="credits")
     contracts = relationship("Contract", back_populates="credit")
+    conditions = relationship("Condition", back_populates="vault")
 
 
 # ------- OPERATIONS ------- #
@@ -163,4 +166,4 @@ class Condition(Base):
 
     contract = relationship("Contract", back_populates="conditions")
     entrypoint = relationship("Entrypoint", back_populates="conditions")
-    vault = relationship("Credits", back_populates="conditions")
+    vault = relationship("Credit", back_populates="conditions")
