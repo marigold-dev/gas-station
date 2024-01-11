@@ -1,7 +1,18 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+)
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
+
+from src.utils import ConditionType
 from .database import Base
 import datetime
 
@@ -107,3 +118,49 @@ class Operation(Base):
 
     contract = relationship("Contract", back_populates="operations")
     entrypoint = relationship("Entrypoint", back_populates="operations")
+
+
+# ------- CONDITIONS ------- #
+
+
+class Condition(Base):
+    __tablename__ = "conditions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    type = Column(Enum(ConditionType))
+    sponsee_address = Column(
+        String,
+        CheckConstraint(
+            "(type = 'MAX_CALLS_PER_SPONSEE') = (sponsee_address IS NOT NULL)",
+            name="sponsee_address_not_null_constraint",
+        ),
+        nullable=True,
+    )
+    contract_id = Column(
+        UUID(as_uuid=True),
+        CheckConstraint(
+            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = (contract_id IS NOT NULL)",
+            name="contract_id_not_null_constraint",
+        ),
+        ForeignKey("contracts.id"),
+        nullable=True,
+    )
+    entrypoint_id = Column(
+        UUID(as_uuid=True),
+        CheckConstraint(
+            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = (entrypoint_id IS NOT NULL)",
+            name="entrypoint_id_not_null_constraint",
+        ),
+        ForeignKey("entrypoints.id"),
+        nullable=True,
+    )
+    vault_id = Column(UUID(as_uuid=True), ForeignKey("credits.id"), nullable=False)
+    max = Column(Integer, nullable=False)
+    current = Column(Integer, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.datetime.utcnow(), nullable=False
+    )
+
+    contract = relationship("Contract", back_populates="conditions")
+    entrypoint = relationship("Entrypoint", back_populates="conditions")
+    vault = relationship("Credits", back_populates="conditions")
