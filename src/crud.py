@@ -5,6 +5,8 @@ from pydantic import UUID4
 from sqlalchemy.orm import Session
 
 from .utils import (
+    ConditionAlreadyExists,
+    ConditionType,
     ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
@@ -308,3 +310,65 @@ def check_calls_per_month(db, contract_id):
         return True
     nb_operations_already_made = get_operations_by_contracts_per_month(db, contract_id)
     return max_calls >= len(nb_operations_already_made)
+
+
+def create_max_calls_per_sponsee_condition(
+    db: Session, condition: schemas.CreateMaxCallsPerSponseeCondition
+):
+    # If a condition still exists, do not create a new one
+    existing_condition = (
+        db.query(models.Condition)
+        .filter(models.Condition.sponsee_address == condition.sponsee_address)
+        .filter(models.Condition.vault_id == condition.vault_id)
+        .filter(models.Condition.current < models.Condition.max)
+        .one_or_none()
+    )
+    if existing_condition is not None:
+        raise ConditionAlreadyExists(
+            "A condition with maximum calls per sponsee is already existing and the maximum is not reached. Cannot create a new one."
+        )
+    db_condition = models.Condition(
+        **{
+            "type": ConditionType.MAX_CALLS_PER_SPONSEE,
+            "sponsee_address": condition.sponsee_address,
+            "vault_id": condition.vault_id,
+            "max": condition.max,
+            "current": 0,
+        }
+    )
+    db.add(db_condition)
+    db.commit()
+    db.refresh(db_condition)
+    return db_condition
+
+
+def create_max_calls_per_entrypoint_condition(
+    db: Session, condition: schemas.CreateMaxCallsPerEntrypointCondition
+):
+    # If a condition still exists, do not create a new one
+    existing_condition = (
+        db.query(models.Condition)
+        .filter(models.Condition.entrypoint_id == condition.entrypoint_id)
+        .filter(models.Condition.contract_id == condition.contract_id)
+        .filter(models.Condition.vault_id == condition.vault_id)
+        .filter(models.Condition.current < models.Condition.max)
+        .one_or_none()
+    )
+    if existing_condition is not None:
+        raise ConditionAlreadyExists(
+            "A condition with maximum calls per entrypoint is already existing and the maximum is not reached. Cannot create a new one."
+        )
+    db_condition = models.Condition(
+        **{
+            "type": ConditionType.MAX_CALLS_PER_ENTRYPOINT,
+            "contract_id": condition.contract_id,
+            "entrypoint_id": condition.entrypoint_id,
+            "vault_id": condition.vault_id,
+            "max": condition.max,
+            "current": 0,
+        }
+    )
+    db.add(db_condition)
+    db.commit()
+    db.refresh(db_condition)
+    return db_condition

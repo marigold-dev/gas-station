@@ -1,5 +1,7 @@
 from pydantic import BaseModel, UUID4
-from typing import List, Any
+from typing import List, Any, Optional
+
+from src.utils import ConditionType
 
 
 # Users
@@ -124,5 +126,28 @@ class CreateOperation(BaseModel):
     status: str
 
 
+# Conditions
 class UpdateMaxCallsPerMonth(BaseModel):
     max_calls: int
+
+
+class CreateCondition(BaseModel):
+    type: ConditionType
+    sponsee_address: Optional[str] = None
+    contract_id: Optional[UUID4] = None
+    entrypoint_id: Optional[UUID4] = None
+    vault_id: UUID4
+    max: int
+
+
+class CreateMaxCallsPerEntrypointCondition(BaseModel):
+    contract_id: UUID4
+    entrypoint_id: UUID4
+    vault_id: UUID4
+    max: int
+
+
+class CreateMaxCallsPerSponseeCondition(BaseModel):
+    sponsee_address: str
+    vault_id: UUID4
+    max: int
