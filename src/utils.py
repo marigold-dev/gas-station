@@ -44,6 +44,10 @@ class TooManyCallsForThisMonth(Exception):
     pass
 
 
+class ConditionAlreadyExists(Exception):
+    pass
+
+
 # -- UTILITY TYPES --
 class ConditionType(enum.Enum):
     MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
