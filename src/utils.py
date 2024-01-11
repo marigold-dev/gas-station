@@ -1,6 +1,9 @@
 # -- EXCEPTIONS --
 
 
+import enum
+
+
 class UserNotFound(Exception):
     pass
 
@@ -39,3 +42,9 @@ class NotEnoughFunds(Exception):
 
 class TooManyCallsForThisMonth(Exception):
     pass
+
+
+# -- UTILITY TYPES --
+class ConditionType(enum.Enum):
+    MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
+    MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"

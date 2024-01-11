@@ -1,9 +1,10 @@
 #import "../permit-cameligo/src/main.mligo" "FA2"
 
-type storage = {
-  nft_address: address;
-  staked: (address, nat) big_map;
-}
+type storage =
+  {
+   nft_address : address;
+   staked : (address, nat) big_map
+  }
 
 (* We need to provide the address of the NFT's owner so that the transfer can be done by someone
  * else (we don't rely on Tezos.get_sender ()) *)
