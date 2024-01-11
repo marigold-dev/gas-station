@@ -6,6 +6,8 @@ from . import tezos, crud, schemas, database
 from pytezos.rpc.errors import MichelsonError
 from pytezos.crypto.encoding import is_address
 from .utils import (
+    ConditionAlreadyExists,
+    ConditionType,
     ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
@@ -402,3 +404,48 @@ async def update_max_calls(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Max calls cannot be < -1"
         )
     return crud.update_max_calls_per_month_condition(db, body.max_calls, contract_id)
+
+
+@router.post("/condition")
+async def create_condition(
+    body: schemas.CreateCondition, db: Session = Depends(database.get_db)
+):
+    try:
+        if (
+            body.type == ConditionType.MAX_CALLS_PER_ENTRYPOINT
+            and body.contract_id is not None
+            and body.entrypoint_id is not None
+        ):
+            return crud.create_max_calls_per_entrypoint_condition(
+                db,
+                schemas.CreateMaxCallsPerEntrypointCondition(
+                    contract_id=body.contract_id,
+                    vault_id=body.vault_id,
+                    max=body.max,
+                    entrypoint_id=body.entrypoint_id,
+                ),
+            )
+        elif (
+            body.type == ConditionType.MAX_CALLS_PER_SPONSEE
+            and body.sponsee_address is not None
+        ):
+            return crud.create_max_calls_per_sponsee_condition(
+                db,
+                schemas.CreateMaxCallsPerSponseeCondition(
+                    sponsee_address=body.sponsee_address,
+                    vault_id=body.vault_id,
+                    max=body.max,
+                ),
+            )
+        else:
+            logging.error("Unknown condition or missing parameters.")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unknown condition or missing parameters.",
+            )
+    except ConditionAlreadyExists as e:
+        logging.warning(e)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(e),
+        )
