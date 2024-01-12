@@ -7,6 +7,7 @@ from pytezos.rpc.errors import MichelsonError
 from pytezos.crypto.encoding import is_address
 from .utils import (
     ConditionAlreadyExists,
+    ConditionExceed,
     ConditionType,
     ContractAlreadyRegistered,
     ContractNotFound,
@@ -301,6 +302,17 @@ async def post_operation(
             entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
             if not entrypoint.is_enabled:
                 raise EntrypointDisabled()
+
+            if not crud.check_conditions(
+                db,
+                schemas.CheckConditions(
+                    sponsee_address=call_data.sender_address,
+                    contract_id=contract.id,
+                    entrypoint_id=entrypoint.id,
+                    vault_id=contract.credit_id,
+                ),
+            ):
+                raise ConditionExceed()
         except EntrypointNotFound:
             logging.warning(f"Entrypoint {entrypoint_name} is not found")
             raise HTTPException(
@@ -312,6 +324,12 @@ async def post_operation(
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Entrypoint {entrypoint_name} is disabled.",
+            )
+        except ConditionExceed:
+            logging.warning(f"A condition exceed the maximum defined.")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"A condition exceed the maximum defined.",
             )
 
     try:
