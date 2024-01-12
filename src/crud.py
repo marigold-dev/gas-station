@@ -372,3 +372,64 @@ def create_max_calls_per_entrypoint_condition(
     db.commit()
     db.refresh(db_condition)
     return db_condition
+
+
+def check_max_calls_per_sponsee(db: Session, sponsee_address: str, vault_id: UUID4):
+    return (
+        db.query(models.Condition)
+        .filter(models.Condition.type == ConditionType.MAX_CALLS_PER_SPONSEE)
+        .filter(models.Condition.sponsee_address == sponsee_address)
+        .filter(models.Condition.vault_id == vault_id)
+        .one_or_none()
+    )
+
+
+def check_max_calls_per_entrypoint(
+    db: Session, contract_id: UUID4, entrypoint_id: UUID4, vault_id: UUID4
+):
+    return (
+        db.query(models.Condition)
+        .filter(models.Condition.type == ConditionType.MAX_CALLS_PER_ENTRYPOINT)
+        .filter(models.Condition.contract_id == contract_id)
+        .filter(models.Condition.entrypoint_id == entrypoint_id)
+        .filter(models.Condition.vault_id == vault_id)
+        .one_or_none()
+    )
+
+
+def check_conditions(db: Session, datas: schemas.CheckConditions):
+    print(datas)
+    sponsee_condition = check_max_calls_per_sponsee(
+        db, datas.sponsee_address, datas.vault_id
+    )
+    entrypoint_condition = check_max_calls_per_entrypoint(
+        db, datas.contract_id, datas.entrypoint_id, datas.vault_id
+    )
+
+    # No condition registered
+    if sponsee_condition is None and entrypoint_condition is None:
+        return True
+    # One of condition is excedeed
+    if (
+        sponsee_condition is not None
+        and (sponsee_condition.current >= sponsee_condition.max)
+    ) or (
+        entrypoint_condition is not None
+        and (entrypoint_condition.current >= entrypoint_condition.max)
+    ):
+        return False
+
+    # Update conditions
+    # TODO - Rewrite with list
+    print(sponsee_condition.current, entrypoint_condition)
+
+    update_condition(db, sponsee_condition)
+    update_condition(db, entrypoint_condition)
+    return True
+
+
+def update_condition(db: Session, condition: Optional[models.Condition]):
+    if condition:
+        db.query(models.Condition).filter(models.Condition.id == condition.id).update(
+            {"current": condition.current + 1}
+        )

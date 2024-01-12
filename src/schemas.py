@@ -151,3 +151,10 @@ class CreateMaxCallsPerSponseeCondition(BaseModel):
     sponsee_address: str
     vault_id: UUID4
     max: int
+
+
+class CheckConditions(BaseModel):
+    sponsee_address: str
+    contract_id: UUID4
+    entrypoint_id: UUID4
+    vault_id: UUID4
