@@ -48,6 +48,10 @@ class ConditionAlreadyExists(Exception):
     pass
 
 
+class ConditionExceed(Exception):
+    pass
+
+
 # -- UTILITY TYPES --
 class ConditionType(enum.Enum):
     MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
