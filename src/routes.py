@@ -467,3 +467,10 @@ async def create_condition(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=str(e),
         )
+
+
+@router.get("/condition/{vault_id}")
+async def get_conditions_by_vault(
+    vault_id: str, db: Session = Depends(database.get_db)
+):
+    return crud.get_conditions_by_vault(db, vault_id)

@@ -339,7 +339,15 @@ def create_max_calls_per_sponsee_condition(
     db.add(db_condition)
     db.commit()
     db.refresh(db_condition)
-    return db_condition
+    return schemas.MaxCallsPerSponseeCondition(
+        sponsee_address=db_condition.sponsee_address,
+        vault_id=db_condition.vault_id,
+        max=db_condition.max,
+        current=db_condition.current,
+        type=db_condition.type,
+        created_at=db_condition.created_at,
+        id=db_condition.id,
+    )
 
 
 def create_max_calls_per_entrypoint_condition(
@@ -371,7 +379,16 @@ def create_max_calls_per_entrypoint_condition(
     db.add(db_condition)
     db.commit()
     db.refresh(db_condition)
-    return db_condition
+    return schemas.MaxCallsPerEntrypointCondition(
+        contract_id=db_condition.contract_id,
+        entrypoint_id=db_condition.entrypoint_id,
+        vault_id=db_condition.vault_id,
+        max=db_condition.max,
+        current=db_condition.current,
+        type=db_condition.type,
+        created_at=db_condition.created_at,
+        id=db_condition.id,
+    )
 
 
 def check_max_calls_per_sponsee(db: Session, sponsee_address: str, vault_id: UUID4):
@@ -421,7 +438,6 @@ def check_conditions(db: Session, datas: schemas.CheckConditions):
 
     # Update conditions
     # TODO - Rewrite with list
-    print(sponsee_condition.current, entrypoint_condition)
 
     update_condition(db, sponsee_condition)
     update_condition(db, entrypoint_condition)
@@ -433,3 +449,6 @@ def update_condition(db: Session, condition: Optional[models.Condition]):
         db.query(models.Condition).filter(models.Condition.id == condition.id).update(
             {"current": condition.current + 1}
         )
+
+def get_conditions_by_vault(db:Session, vault_id: str):
+    return db.query(models.Condition).filter(models.Condition.vault_id == vault_id).all()
