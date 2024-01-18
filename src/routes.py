@@ -8,7 +8,6 @@ from pytezos.crypto.encoding import is_address
 from .utils import (
     ConditionAlreadyExists,
     ConditionExceed,
-    ConditionType,
     ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
@@ -20,6 +19,7 @@ from .utils import (
     OperationNotFound,
 )
 from .config import logging
+from .schemas import ConditionType
 
 
 router = APIRouter()
@@ -328,7 +328,7 @@ async def post_operation(
         except ConditionExceed:
             logging.warning(f"A condition exceed the maximum defined.")
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"A condition exceed the maximum defined.",
             )
 

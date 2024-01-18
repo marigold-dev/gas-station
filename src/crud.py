@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from .utils import (
     ConditionAlreadyExists,
-    ConditionType,
     ContractAlreadyRegistered,
     ContractNotFound,
     CreditNotFound,
@@ -325,11 +324,11 @@ def create_max_calls_per_sponsee_condition(
     )
     if existing_condition is not None:
         raise ConditionAlreadyExists(
-            "A condition with maximum calls per sponsee is already existing and the maximum is not reached. Cannot create a new one."
+            "A condition with maximum calls per sponsee already exists and the maximum is not reached. Cannot create a new one."
         )
     db_condition = models.Condition(
         **{
-            "type": ConditionType.MAX_CALLS_PER_SPONSEE,
+            "type": schemas.ConditionType.MAX_CALLS_PER_SPONSEE,
             "sponsee_address": condition.sponsee_address,
             "vault_id": condition.vault_id,
             "max": condition.max,
@@ -364,11 +363,11 @@ def create_max_calls_per_entrypoint_condition(
     )
     if existing_condition is not None:
         raise ConditionAlreadyExists(
-            "A condition with maximum calls per entrypoint is already existing and the maximum is not reached. Cannot create a new one."
+            "A condition with maximum calls per entrypoint already exists and the maximum is not reached. Cannot create a new one."
         )
     db_condition = models.Condition(
         **{
-            "type": ConditionType.MAX_CALLS_PER_ENTRYPOINT,
+            "type": schemas.ConditionType.MAX_CALLS_PER_ENTRYPOINT,
             "contract_id": condition.contract_id,
             "entrypoint_id": condition.entrypoint_id,
             "vault_id": condition.vault_id,
@@ -394,7 +393,7 @@ def create_max_calls_per_entrypoint_condition(
 def check_max_calls_per_sponsee(db: Session, sponsee_address: str, vault_id: UUID4):
     return (
         db.query(models.Condition)
-        .filter(models.Condition.type == ConditionType.MAX_CALLS_PER_SPONSEE)
+        .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_SPONSEE)
         .filter(models.Condition.sponsee_address == sponsee_address)
         .filter(models.Condition.vault_id == vault_id)
         .one_or_none()
@@ -406,7 +405,7 @@ def check_max_calls_per_entrypoint(
 ):
     return (
         db.query(models.Condition)
-        .filter(models.Condition.type == ConditionType.MAX_CALLS_PER_ENTRYPOINT)
+        .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_ENTRYPOINT)
         .filter(models.Condition.contract_id == contract_id)
         .filter(models.Condition.entrypoint_id == entrypoint_id)
         .filter(models.Condition.vault_id == vault_id)
@@ -439,16 +438,20 @@ def check_conditions(db: Session, datas: schemas.CheckConditions):
     # Update conditions
     # TODO - Rewrite with list
 
-    update_condition(db, sponsee_condition)
-    update_condition(db, entrypoint_condition)
+    if sponsee_condition:
+        update_condition(db, sponsee_condition)
+    if entrypoint_condition:
+        update_condition(db, entrypoint_condition)
     return True
 
 
-def update_condition(db: Session, condition: Optional[models.Condition]):
-    if condition:
-        db.query(models.Condition).filter(models.Condition.id == condition.id).update(
-            {"current": condition.current + 1}
-        )
+def update_condition(db: Session, condition: models.Condition):
+    db.query(models.Condition).filter(models.Condition.id == condition.id).update(
+        {"current": condition.current + 1}
+    )
 
-def get_conditions_by_vault(db:Session, vault_id: str):
-    return db.query(models.Condition).filter(models.Condition.vault_id == vault_id).all()
+
+def get_conditions_by_vault(db: Session, vault_id: str):
+    return (
+        db.query(models.Condition).filter(models.Condition.vault_id == vault_id).all()
+    )
