@@ -1,3 +1,4 @@
+import datetime
 from pydantic import BaseModel, UUID4
 from typing import List, Any, Optional
 
@@ -158,3 +159,21 @@ class CheckConditions(BaseModel):
     contract_id: UUID4
     entrypoint_id: UUID4
     vault_id: UUID4
+
+
+class ConditionBase(BaseModel):
+    vault_id: UUID4
+    max: int
+    current: int
+    type: ConditionType
+    id: UUID4
+    created_at: datetime.datetime
+
+
+class MaxCallsPerEntrypointCondition(ConditionBase):
+    contract_id: UUID4
+    entrypoint_id: UUID4
+
+
+class MaxCallsPerSponseeCondition(ConditionBase):
+    sponsee_address: str
