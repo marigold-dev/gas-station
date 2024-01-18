@@ -1,8 +1,13 @@
 import datetime
+import enum
 from pydantic import BaseModel, UUID4
 from typing import List, Any, Optional
 
-from src.utils import ConditionType
+
+# -- UTILITY TYPES --
+class ConditionType(enum.Enum):
+    MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
+    MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"
 
 
 # Users

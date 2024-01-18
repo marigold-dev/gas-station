@@ -12,7 +12,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
-from src.utils import ConditionType
+from .schemas import ConditionType
 from .database import Base
 import datetime
 
