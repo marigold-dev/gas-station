@@ -1,4 +1,4 @@
-# Tutorial
+# Developing a web application with the Gas Station
 
 This chapter walks through a simple example of a dapp using the Gas Station. You can [try it online at this address](https://ghostnet.gas-station-nft-example.marigold.dev).
 
@@ -26,7 +26,7 @@ Let's go ! 💪
 
 ## Minting an NFT
 
-We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: [`KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx`](https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations).
+We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: [`KT1HUdxmgZUw21ED9gqELVvCty5d1ff41p7J`](https://ghostnet.tzkt.io/KT1HUdxmgZUw21ED9gqELVvCty5d1ff41p7J/operations).
 This contract has an admin, which is the only account allowed to mint NFTs. This is the same
 settings as you would have in a video game, where the game decides when to mint an NFT for a user.
 In this case, the contract admin has been set to be the Gas Station account, because the `mint`
@@ -49,7 +49,8 @@ const contract = await Tezos.wallet.at(PUBLIC_PERMIT_CONTRACT);
 
 ℹ️ The `Tezos` instance of Taquito is already initialized in the `tezos.ts` file, so it can be directly imported.
 
-ℹ️ `PUBLIC_PERMIT_CONTRACT` is also an environment variable corresponding to the address of your NFT contract.
+ℹ️ `PUBLIC_PERMIT_CONTRACT` is an environment variable corresponding to the address of your NFT
+contract. It is defined in the `.env` file.
 
 Afterward, we will forge our operation to send to the Gas Station:
 ```ts
@@ -86,7 +87,7 @@ final users do not have tez in their wallet, all the transactions are posted by 
 
 Despite this centralization, it is still possible to maintain security and non-custodiality using
 permits. In this section, we call _staking_ the operation of sending an NFT to a contract. As the
-user ownsthe NFT, it is appropriate to sign a permit (authorization) to perform this transfer.
+user owns the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.
 
 To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information [here](./library.md))
 
@@ -111,7 +112,7 @@ const permitData = await permitContract.generatePermit({
       });
 ```
 Some explanations:
-- The variable `PUBLIC_STAKING_CONTRACT` contains the address of the staking contract (available at this address [`KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu`](https://ghostnet.tzkt.io/KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu/operations) on Ghostnet).
+- The variable `PUBLIC_STAKING_CONTRACT` contains the address of the staking contract (available at this address [`KT1VVotciVbvz1SopVfoXsxXcpyBBSryQgEn`](https://ghostnet.tzkt.io/KT1VVotciVbvz1SopVfoXsxXcpyBBSryQgEn/operations) on Ghostnet).
 - The `token_id` corresponds to the ID of the token you want to stake.
 
 `permitData` then contains the hash of the permit `bytes` and the hash of transfer operation `transfer_hash`:
@@ -159,7 +160,7 @@ const stakingOperation = await stakingContract.methods.stake(
         userAddress
       ).toTransferParams();
 ```
-ℹ️ `PUBLIC_STAKING_CONTRACT` is an environment variable containing the staking contract's address.
+ℹ️ `PUBLIC_STAKING_CONTRACT` is also an environment variable containing the staking contract's address.
 
 All that remains is to send the operation to the Gas Station to have the gas fees covered:
 

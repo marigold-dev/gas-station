@@ -1,4 +1,4 @@
-# Welcome on Gas Station
+# Marigold Gas Station documentation
 
 ## Introduction
 
