@@ -5,3 +5,4 @@
 [SDKs](./library.md)
 [API](./api.md)
 [Tutorial](./tutorial.md)
+[Permits](./permits.md)
