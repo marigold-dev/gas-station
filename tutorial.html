@@ -91,7 +91,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="welcome.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="webapp.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="library.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="api.html">API</a></li><li class="chapter-item expanded affix "><a href="tutorial.html" class="active">Tutorial</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="welcome.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="webapp.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="library.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="api.html">API</a></li><li class="chapter-item expanded affix "><a href="tutorial.html" class="active">Tutorial</a></li><li class="chapter-item expanded affix "><a href="permits.html">Permits</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -179,7 +179,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
+                        <h1 id="developing-a-web-application-with-the-gas-station"><a class="header" href="#developing-a-web-application-with-the-gas-station">Developing a web application with the Gas Station</a></h1>
 <p>This chapter walks through a simple example of a dapp using the Gas Station. You can <a href="https://ghostnet.gas-station-nft-example.marigold.dev">try it online at this address</a>.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
 <p>The first step is to retrieve the code template located <a href="https://github.com/marigold-dev/gas-station-nft-example-template">here</a>.
@@ -195,7 +195,7 @@ npm run check
 <p>To distinguish between a simple call to the Gas Station and a more complex examples involving permits, we develop two distinct components, <code>src/lib/MintingComponent.svelte</code> and <code>src/lib/StakingComponent.svelte</code>.
 Let's go ! 💪</p>
 <h2 id="minting-an-nft"><a class="header" href="#minting-an-nft">Minting an NFT</a></h2>
-<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations"><code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code></a>.
+<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT1HUdxmgZUw21ED9gqELVvCty5d1ff41p7J/operations"><code>KT1HUdxmgZUw21ED9gqELVvCty5d1ff41p7J</code></a>.
 This contract has an admin, which is the only account allowed to mint NFTs. This is the same
 settings as you would have in a video game, where the game decides when to mint an NFT for a user.
 In this case, the contract admin has been set to be the Gas Station account, because the <code>mint</code>
@@ -210,7 +210,8 @@ pay gas fees. For this, we will use the <a href="./library.html">TypeScript SDK<
 <pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT_CONTRACT);
 </code></pre>
 <p>ℹ️ The <code>Tezos</code> instance of Taquito is already initialized in the <code>tezos.ts</code> file, so it can be directly imported.</p>
-<p>ℹ️ <code>PUBLIC_PERMIT_CONTRACT</code> is also an environment variable corresponding to the address of your NFT contract.</p>
+<p>ℹ️ <code>PUBLIC_PERMIT_CONTRACT</code> is an environment variable corresponding to the address of your NFT
+contract. It is defined in the <code>.env</code> file.</p>
 <p>Afterward, we will forge our operation to send to the Gas Station:</p>
 <pre><code class="language-ts">const mintOperation = await contract.methodsObject.mint_token([{
               owner: userAddress,
@@ -239,7 +240,7 @@ application would typically offer the possibility for the users to transfer or s
 final users do not have tez in their wallet, all the transactions are posted by the Gas Station.</p>
 <p>Despite this centralization, it is still possible to maintain security and non-custodiality using
 permits. In this section, we call <em>staking</em> the operation of sending an NFT to a contract. As the
-user ownsthe NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
+user owns the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
 <p>To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information <a href="./library.html">here</a>)</p>
 <p>To start, let's initialize the <code>GasStation</code> and <code>PermitContract</code>  classes from the SDK:</p>
 <p>ℹ️ <code>GasStation</code> class will target the Gas Station deployed on Ghostnet by default.</p>
@@ -258,7 +259,7 @@ const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 </code></pre>
 <p>Some explanations:</p>
 <ul>
-<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <a href="https://ghostnet.tzkt.io/KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu/operations"><code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code></a> on Ghostnet).</li>
+<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <a href="https://ghostnet.tzkt.io/KT1VVotciVbvz1SopVfoXsxXcpyBBSryQgEn/operations"><code>KT1VVotciVbvz1SopVfoXsxXcpyBBSryQgEn</code></a> on Ghostnet).</li>
 <li>The <code>token_id</code> corresponds to the ID of the token you want to stake.</li>
 </ul>
 <p><code>permitData</code> then contains the hash of the permit <code>bytes</code> and the hash of transfer operation <code>transfer_hash</code>:</p>
@@ -295,7 +296,7 @@ const stakingOperation = await stakingContract.methods.stake(
         userAddress
       ).toTransferParams();
 </code></pre>
-<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is an environment variable containing the staking contract's address.</p>
+<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is also an environment variable containing the staking contract's address.</p>
 <p>All that remains is to send the operation to the Gas Station to have the gas fees covered:</p>
 <pre><code class="language-ts">const response = await gasStationApi.postOperations(userAddress,
           [
@@ -327,6 +328,9 @@ by paying the fees.</p>
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
+                            <a rel="next prefetch" href="permits.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -338,6 +342,9 @@ by paying the fees.</p>
                         <i class="fa fa-angle-left"></i>
                     </a>
 
+                    <a rel="next prefetch" href="permits.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
             </nav>
 
         </div>

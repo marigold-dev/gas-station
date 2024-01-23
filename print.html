@@ -92,7 +92,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="welcome.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="webapp.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="library.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="api.html">API</a></li><li class="chapter-item expanded affix "><a href="tutorial.html">Tutorial</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="welcome.html">Welcome</a></li><li class="chapter-item expanded affix "><a href="webapp.html">Gas Station Webapp</a></li><li class="chapter-item expanded affix "><a href="library.html">SDKs</a></li><li class="chapter-item expanded affix "><a href="api.html">API</a></li><li class="chapter-item expanded affix "><a href="tutorial.html">Tutorial</a></li><li class="chapter-item expanded affix "><a href="permits.html">Permits</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -180,7 +180,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="welcome-on-gas-station"><a class="header" href="#welcome-on-gas-station">Welcome on Gas Station</a></h1>
+                        <h1 id="marigold-gas-station-documentation"><a class="header" href="#marigold-gas-station-documentation">Marigold Gas Station documentation</a></h1>
 <h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
 <p>The Gas Station is a tool allowing developers to sponsor the transactions of their users. It can be
 used to facilitate user onboarding, or to implement a specific economic model (e.g., users can
@@ -302,7 +302,7 @@ const gasApi = new GasStation({
 <h3 id="unity"><a class="header" href="#unity">Unity</a></h3>
 <p>🚧 Work in Progress 🚧</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="api"><a class="header" href="#api">API</a></h1>
-<iframe width="1080" height="915" src="https://ghostnet.gas-station-api.marigold.dev/docs"></iframe><div style="break-before: page; page-break-before: always;"></div><h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
+<iframe width="1080" height="915" src="https://ghostnet.gas-station-api.marigold.dev/docs"></iframe><div style="break-before: page; page-break-before: always;"></div><h1 id="developing-a-web-application-with-the-gas-station"><a class="header" href="#developing-a-web-application-with-the-gas-station">Developing a web application with the Gas Station</a></h1>
 <p>This chapter walks through a simple example of a dapp using the Gas Station. You can <a href="https://ghostnet.gas-station-nft-example.marigold.dev">try it online at this address</a>.</p>
 <h2 id="template"><a class="header" href="#template">Template</a></h2>
 <p>The first step is to retrieve the code template located <a href="https://github.com/marigold-dev/gas-station-nft-example-template">here</a>.
@@ -318,7 +318,7 @@ npm run check
 <p>To distinguish between a simple call to the Gas Station and a more complex examples involving permits, we develop two distinct components, <code>src/lib/MintingComponent.svelte</code> and <code>src/lib/StakingComponent.svelte</code>.
 Let's go ! 💪</p>
 <h2 id="minting-an-nft"><a class="header" href="#minting-an-nft">Minting an NFT</a></h2>
-<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx/operations"><code>KT199yuNkHQKpy331A6fvWJtQ1uan9uya2jx</code></a>.
+<p>We'll start with minting an NFT by a user. The contract we'll use is available at this address on Ghostnet: <a href="https://ghostnet.tzkt.io/KT1HUdxmgZUw21ED9gqELVvCty5d1ff41p7J/operations"><code>KT1HUdxmgZUw21ED9gqELVvCty5d1ff41p7J</code></a>.
 This contract has an admin, which is the only account allowed to mint NFTs. This is the same
 settings as you would have in a video game, where the game decides when to mint an NFT for a user.
 In this case, the contract admin has been set to be the Gas Station account, because the <code>mint</code>
@@ -333,7 +333,8 @@ pay gas fees. For this, we will use the <a href="./library.html">TypeScript SDK<
 <pre><code class="language-ts">const contract = await Tezos.wallet.at(PUBLIC_PERMIT_CONTRACT);
 </code></pre>
 <p>ℹ️ The <code>Tezos</code> instance of Taquito is already initialized in the <code>tezos.ts</code> file, so it can be directly imported.</p>
-<p>ℹ️ <code>PUBLIC_PERMIT_CONTRACT</code> is also an environment variable corresponding to the address of your NFT contract.</p>
+<p>ℹ️ <code>PUBLIC_PERMIT_CONTRACT</code> is an environment variable corresponding to the address of your NFT
+contract. It is defined in the <code>.env</code> file.</p>
 <p>Afterward, we will forge our operation to send to the Gas Station:</p>
 <pre><code class="language-ts">const mintOperation = await contract.methodsObject.mint_token([{
               owner: userAddress,
@@ -362,7 +363,7 @@ application would typically offer the possibility for the users to transfer or s
 final users do not have tez in their wallet, all the transactions are posted by the Gas Station.</p>
 <p>Despite this centralization, it is still possible to maintain security and non-custodiality using
 permits. In this section, we call <em>staking</em> the operation of sending an NFT to a contract. As the
-user ownsthe NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
+user owns the NFT, it is appropriate to sign a permit (authorization) to perform this transfer.</p>
 <p>To facilitate the development of this new feature, we will also use the TypeScript SDK (for reference, you have all the information <a href="./library.html">here</a>)</p>
 <p>To start, let's initialize the <code>GasStation</code> and <code>PermitContract</code>  classes from the SDK:</p>
 <p>ℹ️ <code>GasStation</code> class will target the Gas Station deployed on Ghostnet by default.</p>
@@ -381,7 +382,7 @@ const permitContract = new PermitContract(PUBLIC_PERMIT_CONTRACT, Tezos);
 </code></pre>
 <p>Some explanations:</p>
 <ul>
-<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <a href="https://ghostnet.tzkt.io/KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu/operations"><code>KT1MLMXwFEMcfByGbGcQ9ow3nsrQCkLbcRAu</code></a> on Ghostnet).</li>
+<li>The variable <code>PUBLIC_STAKING_CONTRACT</code> contains the address of the staking contract (available at this address <a href="https://ghostnet.tzkt.io/KT1VVotciVbvz1SopVfoXsxXcpyBBSryQgEn/operations"><code>KT1VVotciVbvz1SopVfoXsxXcpyBBSryQgEn</code></a> on Ghostnet).</li>
 <li>The <code>token_id</code> corresponds to the ID of the token you want to stake.</li>
 </ul>
 <p><code>permitData</code> then contains the hash of the permit <code>bytes</code> and the hash of transfer operation <code>transfer_hash</code>:</p>
@@ -418,7 +419,7 @@ const stakingOperation = await stakingContract.methods.stake(
         userAddress
       ).toTransferParams();
 </code></pre>
-<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is an environment variable containing the staking contract's address.</p>
+<p>ℹ️ <code>PUBLIC_STAKING_CONTRACT</code> is also an environment variable containing the staking contract's address.</p>
 <p>All that remains is to send the operation to the Gas Station to have the gas fees covered:</p>
 <pre><code class="language-ts">const response = await gasStationApi.postOperations(userAddress,
           [
@@ -441,6 +442,115 @@ entrypoint, the permit will be revealed and consumed.</p>
 contract in a secure way. This is possible thanks to the Gas Station, which relays the transaction
 by paying the fees.</p>
 <p>Feel free to send us your feedback and comments on this tutorial. 😃</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="an-introduction-to-off-chain-permits"><a class="header" href="#an-introduction-to-off-chain-permits">An introduction to off-chain permits</a></h1>
+<p>In the <a href="./tutorial.html">Tutorial</a> chapter, we show how to transfer a NFT to a smart contract
+through the Gas Station. As the corresponding operation is ultimately going to get posted by the Gas
+Station account, there is an issue: how is NFT contract going to allow this transfer on behalf of
+the user? While FA2 contracts, which are used to implement NFTs, support the concept of <em>operators</em>
+accounts acting on the behalf of the user, only the original owner of the NFT can allow a new
+operator to do so. The simplest way would be to modify the NFT contract to</p>
+<ul>
+<li>make the Gas Station account a super-user of the contract, and</li>
+<li>let this account <a href="https://tezostaquito.io/docs/fa2_parameters/#the-update_operators-entrypoint">register third-party contracts as
+operators</a>, which
+would allow the transfer to happen</li>
+</ul>
+<p>This, of course, creates a security (and, potentially, legal) issue: if the key of Marigold Gas
+Station account gets stolen, then several FA 2 contracts could be compromised as well. On the other
+hand, users whose operations get sponsored are not supposed to have any tez in their wallet, and
+thus cannot post the <code>update_operator</code> call on-chain themselves.</p>
+<p>What is the solution, then?</p>
+<h2 id="off-chain-permits"><a class="header" href="#off-chain-permits">Off-chain permits</a></h2>
+<p>To solve this problem in a secure way, the notion of <em>off-chain permits</em> was introduced by <a href="https://tzip.tezosagora.org/proposal/tzip-17/">TZIP
+17</a>. It extends the FA 2 standard with a few new
+entrypoints. The most interesting one, itself called <code>permit</code>, can be called by anyone, and
+expects a list of authorizations for transfers signed by the owners. Those transfers are signed
+off-chain: this means that the application has to ask the users for their signature through the
+usual ways (e.g. a Beacon-compatible wallet), but this signature has then to be stored and/or
+sent to this entrypoint by another account.</p>
+<p>Most of the time, however, these permits can be sent in the same transaction as the call to the
+other contract, as we did in the previous chapter. When a permit is registered by the contract, it
+acts as a one-time authorization for a transfer to a specific address, which can either be a
+contract or a implicit account. The <code>transfer</code> entrypoint has the same interface as an ordinary FA 2
+contract and of course supports the same usage as before, including regular operators. This means
+that regular users, who don't need their transactions to be relayed by the gas station, can always
+use their assets in a normal, permissionless way.</p>
+<p>Let's define permits: they are signed bytes, formed from 4 parameters:</p>
+<ul>
+<li>the chain identifier, such that a permit signed for a given chain (such as Ghostnet) cannot be
+used on a different chain;</li>
+<li>the address of the permit FA2 contract, such that a permit signed for a given NFT collection
+cannot be used on another one;</li>
+<li>a counter (nonce) defined inside the contract, such as a permit can only be used once;</li>
+<li>and, finally, a hash of the allowed operation, which is going to be checked when the
+transfer takes place.</li>
+</ul>
+<p>If you recall <a href="./tutorial.html">the previous chapter</a>, this byte string was computed by the library
+with the following call:</p>
+<pre><code class="language-ts">const permitData = await permitContract.generatePermit({
+  from_: userAddress,
+  txs: [{
+    to_: RECIPIENT,
+    token_id,
+    amount: 1
+  }]
+});
+</code></pre>
+<p>Indeed, it can be a little bit complicated to form by hand, and the slightest error makes the permit
+fail silently.</p>
+<p>Once it is signed by the user, the permit can be registered in the contract by calling the <code>permit</code>
+entrypoint, which expects a list of parameters of the form <code>(public_key, signature, transfer_hash)</code>
+where <code>public_key</code> is the user's public key, which is necessary to check the <code>signature</code>. This
+<code>signature</code> is computed from the whole byte string, not just the <code>transfer_hash</code>.</p>
+<p>i If you choose to compute permits by hand, be mindful that they are actually computed by forming
+the following couple: <code>((chain_identifier, contract_address), (contract_counter, transfer_hash))</code>.
+Check the documentation of the contract library that you are using to be sure.</p>
+<h2 id="how-to-deploy-a-permit-contract"><a class="header" href="#how-to-deploy-a-permit-contract">How to deploy a permit contract</a></h2>
+<p>The most up-to-date implementation of TZIP 17-style permits is <a href="https://github.com/aguillon/permit-cameligo/">the permit-cameligo Ligo
+package</a>, which is currently maintained outside of
+Ligo Package Registry website. To use it, it is recommended to clone the following repository and
+use the Ligo compiler to install the dependencies:</p>
+<pre><code class="language-bash">$ git clone https://github.com/aguillon/permit-cameligo
+$ cd permit-cameligo/
+$ make install
+$ make compile
+</code></pre>
+<p>Note that the Makefile assumes that you run the dockerized version of Ligo. To use another one, for
+instance a local one, you can prefix the <code>make</code> commands with <code>ligo_compiler=ligo </code>. For instance:</p>
+<pre><code class="language-bash">$ ligo_compiler=ligo make install
+$ ligo_compiler=ligo make compile
+</code></pre>
+<p>This installs the dependencies in <code>.ligo/</code>, and compiles the code to produce two files in <code>compiled/</code>.
+The first of those files is a JSONized version of the second, which is ready to be deployed by the
+scripts in <code>deploy/</code>. In addition to the compiled code, this script requires two files:
+<code>deploy/metadata.json</code> that contains the contract's metadata, and <code>deploy/.env</code> which contains the
+secret key and the RPC node.</p>
+<p>Let's create a minimal <code>deploy/metadata.json</code> file:</p>
+<pre><code class="language-json">{
+  &quot;name&quot;:&quot;Example&quot;,
+  &quot;interfaces&quot;:[
+    &quot;TZIP-12&quot;
+  ]
+}
+</code></pre>
+<p>Change this file according to your needs. If you just want to test the deployment script, you can
+also use the pre-generated <code>deploy/metadata.json.dist</code> file and rename it to <code>deploy/metadata.json</code>.
+In the same spirit, copy <code>deploy/.env.dist</code> to <code>deploy/.env</code> and edit the file to put your secret
+key:</p>
+<pre><code class="language-bash"># Required: Your private key
+PK=edsk...
+# Required: see https://tezostaquito.io/docs/rpc_nodes/
+RPC_URL=https://ghostnet.tezos.marigold.dev/
+</code></pre>
+<p>Finally, you should be able to</p>
+<pre><code>$ cd deploy/
+$ npm i
+$ npm run start
+</code></pre>
+<p>This workflow assumes that you're going to mint each token individually by calling the
+<code>create_token</code> entrypoint. If you want to pre-mint some tokens, you need to edit the
+<code>deploy/deploy.ts</code> script to start with a non-empty <code>token_metadata</code> map. The script should print
+the address of the contract after origination.</p>
 
                     </main>
 
