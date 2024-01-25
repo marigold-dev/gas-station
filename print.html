@@ -443,46 +443,50 @@ contract in a secure way. This is possible thanks to the Gas Station, which rela
 by paying the fees.</p>
 <p>Feel free to send us your feedback and comments on this tutorial. 😃</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="an-introduction-to-off-chain-permits"><a class="header" href="#an-introduction-to-off-chain-permits">An introduction to off-chain permits</a></h1>
-<p>In the <a href="./tutorial.html">Tutorial</a> chapter, we demonstrate how to transfer an NFT to a smart contract
-through the Gas Station. However, an issue arises as the corresponding operation is ultimately going to be posted by the Gas
-Station account. The concern is how the NFT contract will allow this transfer on behalf of the user.</p>
-<p>FA2 contracts, used to implement NFTs, support the concept of <em>operator</em>
-accounts acting on behalf of the user. However, only the original owner of the NFT can authorize a new operator to do so.
-The simplest way would be to modify the NFT contract to:</p>
+<p>In the <a href="./tutorial.html">Tutorial</a> chapter, we show how to transfer a NFT to a smart contract
+through the Gas Station. As the corresponding operation is ultimately going to get posted by the Gas
+Station account, there is an issue: how is NFT contract going to allow this transfer on behalf of
+the user? While FA2 contracts, which are used to implement NFTs, support the concept of <em>operators</em>
+accounts acting on the behalf of the user, only the original owner of the NFT can allow a new
+operator to do so. The simplest way would be to modify the NFT contract to</p>
 <ul>
-<li>Make the Gas Station account a super-user of the contract.</li>
-<li>Let this account <a href="https://tezostaquito.io/docs/fa2_parameters/#the-update_operators-entrypoint">register third-party contracts as
+<li>make the Gas Station account a super-user of the contract, and</li>
+<li>let this account <a href="https://tezostaquito.io/docs/fa2_parameters/#the-update_operators-entrypoint">register third-party contracts as
 operators</a>, which
-would allow the transfer to happen.</li>
+would allow the transfer to happen</li>
 </ul>
-<p>This, of course, introduces a security (and potentially legal) concern. If the key of the Marigold
-Gas Station account is stolen, multiple FA2 contracts could be compromised as a consequence.
-On the other hand, users whose operations are sponsored are not expected to have any tez in their wallets,
-preventing them from independently posting the <code>update_operator</code> call on-chain.</p>
-<p>So, what is the solution?</p>
+<p>This, of course, creates a security (and, potentially, legal) issue: if the key of Marigold Gas
+Station account gets stolen, then several FA 2 contracts could be compromised as well. On the other
+hand, users whose operations get sponsored are not supposed to have any tez in their wallet, and
+thus cannot post the <code>update_operator</code> call on-chain themselves.</p>
+<p>What is the solution, then?</p>
 <h2 id="off-chain-permits"><a class="header" href="#off-chain-permits">Off-chain permits</a></h2>
-<p>To address this problem securely, the concept of <em>off-chain permits</em> was introduced through <a href="https://tzip.tezosagora.org/proposal/tzip-17/">TZIP
-17</a>. This enhancement extends the FA2 standard with several new
-entrypoints. The most noteworthy one, aptly named <code>permit</code>, can be invoked by anyone. It anticipates a list of
-authorizations for transfers that are signed by the respective owners. Importantly, these transfers are signed off-chain.
-This implies that the application must prompt users for their signatures through conventional means, such as a
-Beacon-compatible wallet. However, the obtained signature must then be stored and/or transmitted to this entrypoint by another account.</p>
-<p>However, in most cases, these permits can be included in the same transaction as the call to the other contract,
-as demonstrated in the previous chapter. When a permit is registered by the contract, it functions as a one-time
-authorization for a transfer to a specific address, which can either be a contract or an implicit account.
-The <code>transfer</code> entrypoint maintains the same interface as an ordinary FA2
-contract and, naturally, supports the same interface as before, including regular operators. This implies
-that regular users, who do not require their transactions to be relayed by the gas station, can always
-utilize their assets in a normal, permissionless manner.</p>
-<p>Let's define permits: they consist of signed bytes formed from 4 parameters:</p>
+<p>To solve this problem in a secure way, the notion of <em>off-chain permits</em> was introduced by <a href="https://tzip.tezosagora.org/proposal/tzip-17/">TZIP
+17</a>. It extends the FA 2 standard with a few new
+entrypoints. The most interesting one, itself called <code>permit</code>, can be called by anyone, and
+expects a list of authorizations for transfers signed by the owners. Those transfers are signed
+off-chain: this means that the application has to ask the users for their signature through the
+usual ways (e.g. a Beacon-compatible wallet), but this signature has then to be stored and/or
+sent to this entrypoint by another account.</p>
+<p>Most of the time, however, these permits can be sent in the same transaction as the call to the
+other contract, as we did in the previous chapter. When a permit is registered by the contract, it
+acts as a one-time authorization for a transfer to a specific address, which can either be a
+contract or a implicit account. The <code>transfer</code> entrypoint has the same interface as an ordinary FA 2
+contract and of course supports the same usage as before, including regular operators. This means
+that regular users, who don't need their transactions to be relayed by the gas station, can always
+use their assets in a normal, permissionless way.</p>
+<p>Let's define permits: they are signed bytes, formed from 4 parameters:</p>
 <ul>
-<li>The chain identifier ensures that a permit signed for a given chain (such as Ghostnet) cannot be used on a different chain.</li>
-<li>The address of the permit FA2 contract ensures that a permit signed for a particular NFT collection cannot be used on another one.</li>
-<li>A counter (nonce) defined inside the contract ensures that a permit can only be used once.</li>
-<li>Finally, a hash of the allowed operation, which is checked when the
+<li>the chain identifier, such that a permit signed for a given chain (such as Ghostnet) cannot be
+used on a different chain;</li>
+<li>the address of the permit FA2 contract, such that a permit signed for a given NFT collection
+cannot be used on another one;</li>
+<li>a counter (nonce) defined inside the contract, such as a permit can only be used once;</li>
+<li>and, finally, a hash of the allowed operation, which is going to be checked when the
 transfer takes place.</li>
 </ul>
-<p>If you recall <a href="./tutorial.html">the previous chapter</a>, this byte string was computed by the library using the following call:</p>
+<p>If you recall <a href="./tutorial.html">the previous chapter</a>, this byte string was computed by the library
+with the following call:</p>
 <pre><code class="language-ts">const permitData = await permitContract.generatePermit({
   from_: userAddress,
   txs: [{
@@ -492,33 +496,35 @@ transfer takes place.</li>
   }]
 });
 </code></pre>
-<p>Indeed, forming it manually can be a little bit complicated, and the slightest error can cause the permit fail silently.</p>
-<p>Once signed by the user, the permit can be registered in the contract by invoking the <code>permit</code>
-entrypoint. This entrypoint expects a list of parameters of the form <code>(public_key, signature, transfer_hash)</code>
-where <code>public_key</code> is the user's public key, necessary for verifying the <code>signature</code>. Notably, this
-<code>signature</code> is computed from the entire byte string, not just the <code>transfer_hash</code>.</p>
-<p>If you choose to compute permits manually, be mindful that they are actually generated by forming
-the following pair: <code>((chain_identifier, contract_address), (contract_counter, transfer_hash))</code>.
-It's advisble to refer to the documentation of the contract library you are using to ensure accuracy.</p>
+<p>Indeed, it can be a little bit complicated to form by hand, and the slightest error makes the permit
+fail silently.</p>
+<p>Once it is signed by the user, the permit can be registered in the contract by calling the <code>permit</code>
+entrypoint, which expects a list of parameters of the form <code>(public_key, signature, transfer_hash)</code>
+where <code>public_key</code> is the user's public key, which is necessary to check the <code>signature</code>. This
+<code>signature</code> is computed from the whole byte string, not just the <code>transfer_hash</code>.</p>
+<p>i If you choose to compute permits by hand, be mindful that they are actually computed by forming
+the following couple: <code>((chain_identifier, contract_address), (contract_counter, transfer_hash))</code>.
+Check the documentation of the contract library that you are using to be sure.</p>
 <h2 id="how-to-deploy-a-permit-contract"><a class="header" href="#how-to-deploy-a-permit-contract">How to deploy a permit contract</a></h2>
-<p>The most up-to-date implementation of TZIP 17-style permits is available in <a href="https://github.com/aguillon/permit-cameligo/">the permit-cameligo Ligo
-package</a>, which is currently maintained outside of the
+<p>The most up-to-date implementation of TZIP 17-style permits is <a href="https://github.com/aguillon/permit-cameligo/">the permit-cameligo Ligo
+package</a>, which is currently maintained outside of
 Ligo Package Registry website. To use it, it is recommended to clone the following repository and
-utilize the Ligo compiler to install the dependencies:</p>
+use the Ligo compiler to install the dependencies:</p>
 <pre><code class="language-bash">$ git clone https://github.com/aguillon/permit-cameligo
 $ cd permit-cameligo/
 $ make install
 $ make compile
 </code></pre>
-<p>Note that the Makefile assumes that you are running the dockerized version of Ligo. If you want to use another one,
-such as a local version, you can prefix the <code>make</code> commands with <code>ligo_compiler=ligo </code>. For example:</p>
+<p>Note that the Makefile assumes that you run the dockerized version of Ligo. To use another one, for
+instance a local one, you can prefix the <code>make</code> commands with <code>ligo_compiler=ligo </code>. For instance:</p>
 <pre><code class="language-bash">$ ligo_compiler=ligo make install
 $ ligo_compiler=ligo make compile
 </code></pre>
-<p>This installs the dependencies in <code>.ligo/</code>, and compiles the code, generating two files in <code>compiled/</code>.
-The first file is a JSONized version of the second, which is ready to be deployed using the scripts in <code>deploy/</code>.
-Alongside the compiled code, this script requires two additional files:
-<code>deploy/metadata.json</code> containing the contract's metadata, and <code>deploy/.env</code> which holds the secret key and the RPC node information.</p>
+<p>This installs the dependencies in <code>.ligo/</code>, and compiles the code to produce two files in <code>compiled/</code>.
+The first of those files is a JSONized version of the second, which is ready to be deployed by the
+scripts in <code>deploy/</code>. In addition to the compiled code, this script requires two files:
+<code>deploy/metadata.json</code> that contains the contract's metadata, and <code>deploy/.env</code> which contains the
+secret key and the RPC node.</p>
 <p>Let's create a minimal <code>deploy/metadata.json</code> file:</p>
 <pre><code class="language-json">{
   &quot;name&quot;:&quot;Example&quot;,
@@ -527,23 +533,24 @@ Alongside the compiled code, this script requires two additional files:
   ]
 }
 </code></pre>
-<p>Customize this file according to your requirements. If you only want to test the deployment script, you can
-also utilize the pre-generated <code>deploy/metadata.json.dist</code> file and rename it to <code>deploy/metadata.json</code>.
-Similarly, copy <code>deploy/.env.dist</code> to <code>deploy/.env</code> and edit the file to include your secret key:</p>
+<p>Change this file according to your needs. If you just want to test the deployment script, you can
+also use the pre-generated <code>deploy/metadata.json.dist</code> file and rename it to <code>deploy/metadata.json</code>.
+In the same spirit, copy <code>deploy/.env.dist</code> to <code>deploy/.env</code> and edit the file to put your secret
+key:</p>
 <pre><code class="language-bash"># Required: Your private key
 PK=edsk...
 # Required: see https://tezostaquito.io/docs/rpc_nodes/
 RPC_URL=https://ghostnet.tezos.marigold.dev/
 </code></pre>
 <p>Finally, you should be able to</p>
-<pre><code class="language-bash">$ cd deploy/
+<pre><code>$ cd deploy/
 $ npm i
 $ npm run start
 </code></pre>
-<p>This workflow assumes that you will mint each token individually by invoking the
-<code>create_token</code> entrypoint. If you prefer to pre-mint some tokens, you will need to modify the
-<code>deploy/deploy.ts</code> script to begin with a non-empty <code>token_metadata</code> map.
-The script should output the address of the contract after origination.</p>
+<p>This workflow assumes that you're going to mint each token individually by calling the
+<code>create_token</code> entrypoint. If you want to pre-mint some tokens, you need to edit the
+<code>deploy/deploy.ts</code> script to start with a non-empty <code>token_metadata</code> map. The script should print
+the address of the contract after origination.</p>
 
                     </main>
 
