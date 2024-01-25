@@ -5,7 +5,6 @@ on:
 jobs:
   fast-forward:
     # Only run if the comment contains the /fast-forward command.
-    if: github.event.comment.body == '/fast-forward' && github.event.issue.pull_request
     runs-on: ubuntu-latest
 
     permissions:
@@ -14,6 +13,8 @@ jobs:
       issues: write
 
     steps:
+      - name: Test
+        run: echo ${{ github.event.comment.body }}
       - name: Fast forwarding
         uses: sequoia-pgp/fast-forward@v1
         with:
