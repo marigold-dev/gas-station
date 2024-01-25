@@ -28,3 +28,5 @@ If it doesn't work out the box, please open an issue.
   ("actual" owner of the assets).
 
 Good luck!
+
+TEST
