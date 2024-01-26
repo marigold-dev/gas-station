@@ -18,7 +18,8 @@ else:
 
 
 assert TEZOS_RPC is not None, "Please specify a TEZOS_RPC"
-assert SECRET_KEY is not None and len(SECRET_KEY) > 0, "Could not read secret key"
+assert SECRET_KEY is not None and len(
+    SECRET_KEY) > 0, "Could not read secret key"
 
 
 # -- LOGGING --

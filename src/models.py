@@ -117,14 +117,16 @@ class Operation(Base):
     entrypoint_id = Column(UUID(as_uuid=True), ForeignKey("entrypoints.id"))
     hash = Column(String)
     status = Column(String)  # TODO Enum
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow())
+    created_at = Column(DateTime(timezone=True),
+                        default=datetime.datetime.utcnow())
 
     contract = relationship("Contract", back_populates="operations")
     entrypoint = relationship("Entrypoint", back_populates="operations")
 
 
 # ------- CONDITIONS ------- #
-
+# Condition class with the requirement to limit the number
+# of calls for new users (sponsees)
 
 class Condition(Base):
     __tablename__ = "conditions"
@@ -157,7 +159,8 @@ class Condition(Base):
         ForeignKey("entrypoints.id"),
         nullable=True,
     )
-    vault_id = Column(UUID(as_uuid=True), ForeignKey("credits.id"), nullable=False)
+    vault_id = Column(UUID(as_uuid=True), ForeignKey(
+        "credits.id"), nullable=False)
     max = Column(Integer, nullable=False)
     current = Column(Integer, nullable=False)
     created_at = Column(

@@ -7,6 +7,7 @@ from pytezos.michelson.types import MichelsonType
 from pytezos.crypto.key import blake2b_32
 import pytezos
 
+
 def tezos_hex(s):
     return f"0x{bytes(s, 'utf-8').hex()}"
 
@@ -205,7 +206,8 @@ class Demo:
         }])
 
         matcher = MichelsonType.match(
-            self.nft_contract.entrypoints["transfer"].as_micheline_expr()["args"][0]
+            self.nft_contract.entrypoints["transfer"].as_micheline_expr()[
+                "args"][0]
         )
         micheline_encoded = matcher.from_micheline_value(
             transfer.parameters["value"][0]["args"]
@@ -245,8 +247,8 @@ class Demo:
         permit_hash = matcher2.from_micheline_value(permit_hashed_args).pack()
         permit_signature = key.sign(permit_hash)
         permit_op = self.nft_contract.permit([(
-                key.public_key(),
-                permit_signature,
-                transfer_hash
-            )]).as_transaction()
+            key.public_key(),
+            permit_signature,
+            transfer_hash
+        )]).as_transaction()
         return permit_op

@@ -75,7 +75,8 @@ async def update_credits(
         amount = credits.amount
         is_confirmed = await tezos.confirm_deposit(op_hash, payer_address, amount)
         if not is_confirmed:
-            logging.warning(f"Could not find confirmation for {amount} with {op_hash}")
+            logging.warning(
+                f"Could not find confirmation for {amount} with {op_hash}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Could not find confirmation for {amount} with {op_hash}",
@@ -114,7 +115,8 @@ async def withdraw_credits(
             detail=f"Credit not found.",
         )
     if credits.amount < withdraw.amount:
-        logging.warning(f"Not enough funds to withdraw credit ID {withdraw.id}.")
+        logging.warning(
+            f"Not enough funds to withdraw credit ID {withdraw.id}.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough funds to withdraw.",
@@ -122,7 +124,8 @@ async def withdraw_credits(
 
     expected_counter = credits.owner.withdraw_counter or 0
     if expected_counter != withdraw.withdraw_counter:
-        logging.warning(f"Withdraw counter provided is not the expected counter.")
+        logging.warning(
+            f"Withdraw counter provided is not the expected counter.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Bad withdraw counter."
         )
@@ -145,7 +148,8 @@ async def withdraw_credits(
     )
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
-        logging.debug(f"Start to confirm withdraw for {result['transaction_hash']}")
+        logging.debug(
+            f"Start to confirm withdraw for {result['transaction_hash']}")
         # Starts a independent loop to check that the operation
         # has been confirmed
         asyncio.create_task(
@@ -299,7 +303,8 @@ async def post_operation(
         entrypoint_name = operation["parameters"]["entrypoint"]
 
         try:
-            entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
+            entrypoint = crud.get_entrypoint(
+                db, str(contract.address), entrypoint_name)
             if not entrypoint.is_enabled:
                 raise EntrypointDisabled()
 
@@ -339,7 +344,8 @@ async def post_operation(
 
         logging.debug(f"Result of operation simulation : {op}")
 
-        op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
+        op_estimated_fees = [(int(x["fee"]), x["destination"])
+                             for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
 
         logging.debug(f"Estimated fees: {estimated_fees}")
@@ -350,7 +356,8 @@ async def post_operation(
                 f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
             )
         if not crud.check_calls_per_month(db, contract.id):  # type: ignore
-            logging.warning(f"Too many calls made for this contract this month.")
+            logging.warning(
+                f"Too many calls made for this contract this month.")
             raise TooManyCallsForThisMonth()
 
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
@@ -358,7 +365,8 @@ async def post_operation(
         crud.create_operation(
             db,
             schemas.CreateOperation(
-                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
+                # type: ignore
+                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]
             ),
         )
     except MichelsonError as e:

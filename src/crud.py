@@ -57,7 +57,8 @@ def get_contracts_by_credit(db: Session, credit_id: str):
     Return a list of models.Contracts or raise UserNotFound exception
     """
     return (
-        db.query(models.Contract).filter(models.Contract.credit_id == credit_id).all()
+        db.query(models.Contract).filter(
+            models.Contract.credit_id == credit_id).all()
     )
 
 
@@ -67,7 +68,8 @@ def get_contract_by_address(db: Session, address: str):
     """
     try:
         return (
-            db.query(models.Contract).filter(models.Contract.address == address).one()
+            db.query(models.Contract).filter(
+                models.Contract.address == address).one()
         )
     except NoResultFound as e:
         raise ContractNotFound() from e
@@ -77,7 +79,8 @@ def get_contract(db: Session, contract_id: str):
     """
     Return a models.Contract or raise ContractNotFound exception
     """
-    db_contract: Optional[models.Contract] = db.query(models.Contract).get(contract_id)
+    db_contract: Optional[models.Contract] = db.query(
+        models.Contract).get(contract_id)
     if db_contract is None:
         raise ContractNotFound()
     return db_contract
@@ -111,9 +114,11 @@ def create_contract(db: Session, contract: schemas.ContractCreation):
     # TODO rewrite this with transaction or something else better
     try:
         contract = get_contract_by_address(db, contract.address)
-        raise ContractAlreadyRegistered(f"Contract {contract.address} already added.")
+        raise ContractAlreadyRegistered(
+            f"Contract {contract.address} already added.")
     except ContractNotFound:
-        c = {k: v for k, v in contract.model_dump().items() if k not in ["entrypoints"]}
+        c = {k: v for k, v in contract.model_dump().items() if k not in [
+            "entrypoints"]}
         db_contract = models.Contract(**c)
         db.add(db_contract)
         db.commit()
@@ -145,7 +150,8 @@ def get_user_credits(db: Session, user_id: str):
     """
     Get credits from a user.
     """
-    db_credits = db.query(models.Credit).filter(models.Credit.owner_id == user_id).all()
+    db_credits = db.query(models.Credit).filter(
+        models.Credit.owner_id == user_id).all()
     return db_credits
 
 
@@ -307,7 +313,8 @@ def check_calls_per_month(db, contract_id):
     # If max_calls is -1 means condition is disabled (NO LIMIT)
     if max_calls == -1:  # type: ignore
         return True
-    nb_operations_already_made = get_operations_by_contracts_per_month(db, contract_id)
+    nb_operations_already_made = get_operations_by_contracts_per_month(
+        db, contract_id)
     return max_calls >= len(nb_operations_already_made)
 
 
@@ -453,5 +460,6 @@ def update_condition(db: Session, condition: models.Condition):
 
 def get_conditions_by_vault(db: Session, vault_id: str):
     return (
-        db.query(models.Condition).filter(models.Condition.vault_id == vault_id).all()
+        db.query(models.Condition).filter(
+            models.Condition.vault_id == vault_id).all()
     )

@@ -50,7 +50,8 @@ def find_fees(global_tx, payer_key):
         (int(z["change"]), x["destination"])
         for x in op_result
         for y in (
-            x["metadata"].get("operation_result", {}).get("balance_updates", {}),
+            x["metadata"].get("operation_result", {}).get(
+                "balance_updates", {}),
             x["metadata"].get("balance_updates", {}),
         )
         for z in y
@@ -232,7 +233,8 @@ class TezosManager:
                     log.info(f"{n_ops} operations to process and send")
                     # Post all the correct operations together and get the
                     # result from the RPC to know what the real fees were
-                    posted_tx = ptz.bulk(*acceptable_operations.values()).send()
+                    posted_tx = ptz.bulk(
+                        *acceptable_operations.values()).send()
                     for i, k in enumerate(acceptable_operations):
                         assert self.results[k] != "failing"
                         self.results[k] = {"transaction": posted_tx}
