@@ -28,6 +28,8 @@ router = APIRouter()
 
 
 # Healthcheck
+# This function represents the root endpoint of the API,
+# returning a simple "Hello World" message.
 @router.get("/")
 async def root():
     return {"message": "Hello World"}
@@ -35,6 +37,8 @@ async def root():
 
 # POST endpoints
 @router.post("/users", response_model=schemas.User)
+# Handles the creation of a new user by accepting user data and storing
+# it in the database.
 async def create_user(
     user: schemas.UserCreation, db: Session = Depends(database.get_db)
 ):
@@ -44,6 +48,8 @@ async def create_user(
 
 
 @router.post("/contracts", response_model=schemas.Contract)
+# Creates a new contract in the system, handling cases where the contract is
+# already registered.
 async def create_contract(
     contract: schemas.ContractCreation, db: Session = Depends(database.get_db)
 ):
@@ -59,6 +65,7 @@ async def create_contract(
 
 # PUT endpoints
 @router.put("/entrypoints", response_model=list[schemas.Entrypoint])
+# Updates the entrypoints of a contract in the system.
 async def update_entrypoints(
     entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)
 ):
@@ -66,6 +73,8 @@ async def update_entrypoints(
 
 
 @router.put("/deposit", response_model=schemas.Credit)
+# Updates the credits associated with a user's account, confirming a deposit
+# transaction.
 async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
@@ -75,7 +84,8 @@ async def update_credits(
         amount = credits.amount
         is_confirmed = await tezos.confirm_deposit(op_hash, payer_address, amount)
         if not is_confirmed:
-            logging.warning(f"Could not find confirmation for {amount} with {op_hash}")
+            logging.warning(
+                f"Could not find confirmation for {amount} with {op_hash}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Could not find confirmation for {amount} with {op_hash}",
@@ -102,6 +112,8 @@ async def update_credits(
 
 
 @router.put("/withdraw")
+# Handles the withdrawal of credits from a user's account, verifying the transaction
+# and updating the user's balance accordingly
 async def withdraw_credits(
     withdraw: schemas.CreditWithdraw, db: Session = Depends(database.get_db)
 ):
@@ -114,7 +126,8 @@ async def withdraw_credits(
             detail=f"Credit not found.",
         )
     if credits.amount < withdraw.amount:
-        logging.warning(f"Not enough funds to withdraw credit ID {withdraw.id}.")
+        logging.warning(
+            f"Not enough funds to withdraw credit ID {withdraw.id}.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough funds to withdraw.",
@@ -122,7 +135,8 @@ async def withdraw_credits(
 
     expected_counter = credits.owner.withdraw_counter or 0
     if expected_counter != withdraw.withdraw_counter:
-        logging.warning(f"Withdraw counter provided is not the expected counter.")
+        logging.warning(
+            f"Withdraw counter provided is not the expected counter.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Bad withdraw counter."
         )
@@ -145,7 +159,8 @@ async def withdraw_credits(
     )
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
-        logging.debug(f"Start to confirm withdraw for {result['transaction_hash']}")
+        logging.debug(
+            f"Start to confirm withdraw for {result['transaction_hash']}")
         # Starts a independent loop to check that the operation
         # has been confirmed
         asyncio.create_task(
@@ -159,6 +174,7 @@ async def withdraw_credits(
 
 # Users and credits getters
 @router.get("/users/{address_or_id}", response_model=schemas.User)
+# Retrieves a user's information by their address or ID.
 async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
     try:
         if is_address(address_or_id) and address_or_id.startswith("tz"):
@@ -174,6 +190,7 @@ async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
 
 
 @router.get("/credits/{user_address_or_id}", response_model=list[schemas.Credit])
+# Retrieves the credits associated with a user's account.
 async def credits_for_user(
     user_address_or_id: str, db: Session = Depends(database.get_db)
 ):
@@ -192,6 +209,7 @@ async def credits_for_user(
 
 # Contracts
 @router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
+# Retrieves the contracts associated with a user's address.
 async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_user(db, user_address)
@@ -203,6 +221,7 @@ async def get_user_contracts(user_address: str, db: Session = Depends(database.g
 
 
 @router.get("/contracts/credit/{credit_id}", response_model=list[schemas.Contract])
+# Retrieves the contract associated with a credit ID.
 async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
     try:
         return crud.get_contracts_by_credit(db, credit_id)
@@ -214,6 +233,7 @@ async def get_credit(credit_id: str, db: Session = Depends(database.get_db)):
 
 
 @router.get("/contracts/{address_or_id}", response_model=schemas.Contract)
+# Retrieves a contract by its address or ID.
 async def get_contract(address_or_id: str, db: Session = Depends(database.get_db)):
     if is_address(address_or_id) and address_or_id.startswith("KT"):
         contract = crud.get_contract_by_address(db, address_or_id)
@@ -231,6 +251,7 @@ async def get_contract(address_or_id: str, db: Session = Depends(database.get_db
 @router.get(
     "/entrypoints/{contract_address_or_id}", response_model=list[schemas.Entrypoint]
 )
+# Retrieves the entrypoints of a contract.
 async def get_entrypoints(
     contract_address_or_id: str, db: Session = Depends(database.get_db)
 ):
@@ -253,6 +274,7 @@ async def get_entrypoints(
 @router.get(
     "/entrypoints/{contract_address_or_id}/{name}", response_model=schemas.Entrypoint
 )
+# Retrieve a specific entrypoint of a contract.
 async def get_entrypoint(
     contract_address_or_id: str, name: str, db: Session = Depends(database.get_db)
 ):
@@ -264,9 +286,11 @@ async def get_entrypoint(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Entrypoint not found."
         )
 
-
+# TODO
 # Operations
 @router.post("/operation")
+# Handles the posting of an operation, including simulation,
+# fee estimation, credit checking, and queuing the operation for execution.
 async def post_operation(
     call_data: schemas.UnsignedCall, db: Session = Depends(database.get_db)
 ):
@@ -276,6 +300,15 @@ async def post_operation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Empty operations list",
         )
+    try:
+
+    # Chcek if the caller is a new user
+    user = crud.get_user_by_address(db, call_data.sender_address)
+    if user.is_new:
+        max_calls_for_new_user = crud.get_max_calls_for_new_user(db, user.id)
+        if not crud.check_user_calls (db, user.id, max_calls_for_new_user):
+            raise TooManyCallsForNewUser()
+
     # TODO: check that amount=0?
     for operation in call_data.operations:
         contract_address = str(operation["destination"])
@@ -299,7 +332,8 @@ async def post_operation(
         entrypoint_name = operation["parameters"]["entrypoint"]
 
         try:
-            entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
+            entrypoint = crud.get_entrypoint(
+                db, str(contract.address), entrypoint_name)
             if not entrypoint.is_enabled:
                 raise EntrypointDisabled()
 
@@ -339,7 +373,8 @@ async def post_operation(
 
         logging.debug(f"Result of operation simulation : {op}")
 
-        op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
+        op_estimated_fees = [(int(x["fee"]), x["destination"])
+                             for x in op.contents]
         estimated_fees = tezos.group_fees(op_estimated_fees)
 
         logging.debug(f"Estimated fees: {estimated_fees}")
@@ -350,7 +385,8 @@ async def post_operation(
                 f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
             )
         if not crud.check_calls_per_month(db, contract.id):  # type: ignore
-            logging.warning(f"Too many calls made for this contract this month.")
+            logging.warning(
+                f"Too many calls made for this contract this month.")
             raise TooManyCallsForThisMonth()
 
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
@@ -358,7 +394,8 @@ async def post_operation(
         crud.create_operation(
             db,
             schemas.CreateOperation(
-                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
+                # type: ignore
+                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]
             ),
         )
     except MichelsonError as e:
@@ -389,6 +426,8 @@ async def post_operation(
 
 
 @router.post("/signed_operation")
+# Handles the posting of a signed operation, verifying the signature before
+# processing.
 async def signed_operation(
     call_data: schemas.SignedCall, db: Session = Depends(database.get_db)
 ):
@@ -412,6 +451,7 @@ async def signed_operation(
 @router.put(
     "/contract/{contract_id}/condition/max_calls", response_model=schemas.Contract
 )
+# Update the maximum calls per month condition for a contract.
 async def update_max_calls(
     contract_id: str,
     body: schemas.UpdateMaxCallsPerMonth,
@@ -425,6 +465,7 @@ async def update_max_calls(
 
 
 @router.post("/condition")
+# Creates a new condition for limiting calls per entrypoint or sponsee
 async def create_condition(
     body: schemas.CreateCondition, db: Session = Depends(database.get_db)
 ):
@@ -444,13 +485,10 @@ async def create_condition(
                 ),
             )
         elif (
-            body.type == ConditionType.MAX_CALLS_PER_SPONSEE
-            and body.sponsee_address is not None
-        ):
-            return crud.create_max_calls_per_sponsee_condition(
+                body.type == ConditionType.MAX_CALLS_PER_NEW_USER):
+            return crud.create_max_calls_per_new_user_condition(
                 db,
-                schemas.CreateMaxCallsPerSponseeCondition(
-                    sponsee_address=body.sponsee_address,
+                schemas.CreateMaxCallsPerNewUserCondition(
                     vault_id=body.vault_id,
                     max=body.max,
                 ),
@@ -470,6 +508,7 @@ async def create_condition(
 
 
 @router.get("/condition/{vault_id}")
+# Retrieves conditions associated with a specific vault.
 async def get_conditions_by_vault(
     vault_id: str, db: Session = Depends(database.get_db)
 ):

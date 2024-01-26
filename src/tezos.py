@@ -21,10 +21,13 @@ ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
 log.info(f"API address is {ptz.key.public_key_hash()}")
 constants = ptz.shell.block.context.constants()
 
+#
+
 
 async def find_transaction(tx_hash):
-    """Finds the transaction from its hash.
-    This function searches the last 10 blocks
+    """
+    Asynchronously finds a transaction by its hash in
+    the last 10 blocks.
     """
     block_time = int(constants["minimal_block_delay"])
     nb_try = 0
@@ -40,6 +43,9 @@ async def find_transaction(tx_hash):
 
     return op_result
 
+# Parses the transaction metadata to find the fees associated
+# with the given payer's address.
+
 
 def find_fees(global_tx, payer_key):
     """Find the baker and storage fees in the operation result
@@ -50,7 +56,8 @@ def find_fees(global_tx, payer_key):
         (int(z["change"]), x["destination"])
         for x in op_result
         for y in (
-            x["metadata"].get("operation_result", {}).get("balance_updates", {}),
+            x["metadata"].get("operation_result", {}).get(
+                "balance_updates", {}),
             x["metadata"].get("balance_updates", {}),
         )
         for z in y
@@ -59,6 +66,7 @@ def find_fees(global_tx, payer_key):
     return fees
 
 
+# Groups the fees by contract address.
 def group_fees(fees: list[tuple[int, str]]):
     """Expects a list of (fee, contract_address) and returns the sum
     of fees by contract."""
@@ -68,6 +76,8 @@ def group_fees(fees: list[tuple[int, str]]):
     return grouped_fees
 
 
+# Checks if the credits available for each contract address
+# sufficient to cover the estimated fees.
 def check_credits(db, estimated_fees):
     for address, total_fee in estimated_fees.items():
         credits = crud.get_credits_from_contract_address(db, address)
@@ -78,6 +88,8 @@ def check_credits(db, estimated_fees):
             )
             return False
     return True
+
+# Asynchronously confirms a deposit transaction by verifying its details.
 
 
 async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
@@ -93,6 +105,8 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     )
 
 
+# Asynchronously confirms a withdraw transaction and updates the
+# user's credits accordingly.
 async def confirm_withdraw(tx_hash, db, user_id, withdraw):
     """Ensure withdraw transaction is successful to update credits user. \n
     Can raise an OperationNotFound exception if transaction is not found.
@@ -104,6 +118,7 @@ async def confirm_withdraw(tx_hash, db, user_id, withdraw):
     crud.update_credits(db, credit_update)
 
 
+# Simulates a transaction with the provided operations.
 def simulate_transaction(operations):
     op = ptz.bulk(
         *[
@@ -118,6 +133,8 @@ def simulate_transaction(operations):
     )
     return op.autofill()
 
+# Retrieve the publick key associated with a given address.
+
 
 def get_public_key(address):
     assert address.startswith("tz")
@@ -125,6 +142,7 @@ def get_public_key(address):
     return key
 
 
+# Checks the validity of signature against a pair of data and public key.
 def check_signature(pair_data, signature, public_key, pair_type=None):
     if pair_type is None:
         # Type of a withdraw operation
@@ -143,16 +161,22 @@ def check_signature(pair_data, signature, public_key, pair_type=None):
         return False
 
 
+# Computes the public key hash from a given public key.
 def public_key_hash(public_key: str):
     key = pytezos.Key.from_encoded_key(public_key)
     return key.public_key_hash()
 
 
+# Asynchronously sends a withdrawal transaction to the Tezos network.
 async def withdraw(tezos_manager, to, amount):
     op = ptz.transaction(
         source=ptz.key.public_key_hash(), destination=to, amount=amount
     ).autofill()
     return await tezos_manager.queue_operation(sender=to, operation=op)
+
+# A class representing a manager for handling Tezos operations.
+# It queues operations, waits for their results, updates fees, and manages
+# the main event loop for processing operations.
 
 
 class TezosManager:
@@ -181,6 +205,8 @@ class TezosManager:
             "transaction_hash": self.results[sender]["transaction"].hash(),
         }
 
+    # Updates the credits and transaction amounts in the database based on
+    # the fees incurred by a posted transaction.
     async def update_fees(self, posted_tx):
         op_result = await find_transaction(posted_tx.hash())
         fees = find_fees(op_result, ptz.key.public_key_hash())
@@ -202,6 +228,8 @@ class TezosManager:
         finally:
             db.close()
 
+    # The main event loop for the Tezos manager, responsible for processing
+    # queued operations and updating fees.
     async def main_loop(self):
         while True:
             try:
@@ -232,7 +260,8 @@ class TezosManager:
                     log.info(f"{n_ops} operations to process and send")
                     # Post all the correct operations together and get the
                     # result from the RPC to know what the real fees were
-                    posted_tx = ptz.bulk(*acceptable_operations.values()).send()
+                    posted_tx = ptz.bulk(
+                        *acceptable_operations.values()).send()
                     for i, k in enumerate(acceptable_operations):
                         assert self.results[k] != "failing"
                         self.results[k] = {"transaction": posted_tx}

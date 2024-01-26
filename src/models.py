@@ -18,6 +18,10 @@ import datetime
 
 
 # ------- USER ------- #
+# Represents a user in the system
+# Contains columns for: id, name, address, and withdraw_counter
+# Has relationships with `Contract` and `Credit` entities
+
 class User(Base):
     __tablename__ = "users"
 
@@ -36,6 +40,12 @@ class User(Base):
 
 
 # ------- CONTRACT ------- #
+# Represents a contract in the system
+# Contains columns for: id, name, address, owner_id, credit_id, and
+# max_calls_per_month
+# Has relationships with `User` (owner), `Entrypoint`, `Credit`,
+# `Operation`, and `Condition` entities
+
 class Contract(Base):
     __tablename__ = "contracts"
 
@@ -61,6 +71,10 @@ class Contract(Base):
 
 
 # ------- ENTRYPOINT ------- #
+# Represents an entry point in a contract.
+# Contains columns for: id, name, is_enabled, and contract_id
+# Has relationships with `Contract`, `Operation`, and `Condition` entities
+
 class Entrypoint(Base):
     __tablename__ = "entrypoints"
 
@@ -85,7 +99,9 @@ class Entrypoint(Base):
 
 
 # ------- CREDITS ------- #
-
+# Represents a credit in the systems
+# Contains columns for: id, amount, and owner_id
+# Has relationships with `User`, `Contract` and `Condition` entities
 
 class Credit(Base):
     __tablename__ = "credits"
@@ -105,7 +121,10 @@ class Credit(Base):
 
 
 # ------- OPERATIONS ------- #
-
+# Represents an operation in the system
+# Contains columns for: id, cost, user_address, contract_id,
+# entrypoint_id, hash, status, and created_at
+# Has relationships with `Contract` and `Entrypoint` entities
 
 class Operation(Base):
     __tablename__ = "operations"
@@ -117,13 +136,21 @@ class Operation(Base):
     entrypoint_id = Column(UUID(as_uuid=True), ForeignKey("entrypoints.id"))
     hash = Column(String)
     status = Column(String)  # TODO Enum
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow())
+    created_at = Column(DateTime(timezone=True),
+                        default=datetime.datetime.utcnow())
 
     contract = relationship("Contract", back_populates="operations")
     entrypoint = relationship("Entrypoint", back_populates="operations")
 
 
 # ------- CONDITIONS ------- #
+# Represents a condition in the system
+# Contains columns for: id, type, contract_id
+#                       entrypoint_id, vault_id, max, current,
+#                       and created_at
+# Uses `Enum` for `ConditionType` and includes constraints based on
+# condition type.
+# Has relationships with `Contract`, `Entrypoint` and `Credit` entities
 
 
 class Condition(Base):
@@ -131,14 +158,6 @@ class Condition(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type = Column(Enum(ConditionType))
-    sponsee_address = Column(
-        String,
-        CheckConstraint(
-            "(type = 'MAX_CALLS_PER_SPONSEE') = (sponsee_address IS NOT NULL)",
-            name="sponsee_address_not_null_constraint",
-        ),
-        nullable=True,
-    )
     contract_id = Column(
         UUID(as_uuid=True),
         CheckConstraint(
@@ -146,7 +165,7 @@ class Condition(Base):
             name="contract_id_not_null_constraint",
         ),
         ForeignKey("contracts.id"),
-        nullable=True,
+        nullable=True,  # Contract is nullable
     )
     entrypoint_id = Column(
         UUID(as_uuid=True),
@@ -155,11 +174,15 @@ class Condition(Base):
             name="entrypoint_id_not_null_constraint",
         ),
         ForeignKey("entrypoints.id"),
-        nullable=True,
+        nullable=True,  # Entrypoint is nullable
     )
-    vault_id = Column(UUID(as_uuid=True), ForeignKey("credits.id"), nullable=False)
-    max = Column(Integer, nullable=False)
-    current = Column(Integer, nullable=False)
+    vault_id = Column(UUID(as_uuid=True), ForeignKey(
+        "credits.id"), nullable=False)
+    # Maximum number of calls for a new user
+    max_calls_for_new_user = Column(Integer, nullable=False)  # new column
+    # Tract the current number of calls for a new user
+    current_calls_for_new_user = Column(
+        Integer, nullable=False, default=0)  # New column
     created_at = Column(
         DateTime(timezone=True), default=datetime.datetime.utcnow(), nullable=False
     )
