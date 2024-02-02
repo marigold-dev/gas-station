@@ -44,6 +44,26 @@ def create_user(db: Session, user: schemas.UserCreation):
     return db_user
 
 
+def check_user_is_new(db: Session, user_id: UUID4) -> bool:
+    """
+    Function to determine if a user is one of the last 4
+    new users registered in the database
+    """
+    try:
+        # Get the last 4 users ordered by their registration data
+        recent_users: List[models.User] = (
+            db.query(models.User)
+            .order_by(models.User.created_at.desc())
+            .limit(4)
+            .all()
+        )
+        # Check if the given user is among the last 4 users
+        return any(user.id == user_id for user in recent_users)
+    except UserNotFound:
+        # If the user is not found, they are not among the newest users
+        return False
+
+
 def get_contracts_by_user(db: Session, user_address: str):
     """
     Return a list of models.Contracts or raise UserNotFound exception
@@ -318,48 +338,16 @@ def check_calls_per_month(db, contract_id):
     return max_calls >= len(nb_operations_already_made)
 
 
-def create_max_calls_per_sponsee_condition(
-    db: Session, condition: schemas.CreateMaxCallsPerSponseeCondition
-):
-    # If a condition still exists, do not create a new one
-    existing_condition = (
-        db.query(models.Condition)
-        .filter(models.Condition.sponsee_address == condition.sponsee_address)
-        .filter(models.Condition.vault_id == condition.vault_id)
-        .filter(models.Condition.current < models.Condition.max)
-        .one_or_none()
-    )
-    if existing_condition is not None:
-        raise ConditionAlreadyExists(
-            "A condition with maximum calls per sponsee already exists and the maximum is not reached. Cannot create a new one."
-        )
-    db_condition = models.Condition(
-        **{
-            "type": schemas.ConditionType.MAX_CALLS_PER_SPONSEE,
-            "sponsee_address": condition.sponsee_address,
-            "vault_id": condition.vault_id,
-            "max": condition.max,
-            "current": 0,
-        }
-    )
-    db.add(db_condition)
-    db.commit()
-    db.refresh(db_condition)
-    return schemas.MaxCallsPerSponseeCondition(
-        sponsee_address=db_condition.sponsee_address,
-        vault_id=db_condition.vault_id,
-        max=db_condition.max,
-        current=db_condition.current,
-        type=db_condition.type,
-        created_at=db_condition.created_at,
-        id=db_condition.id,
-    )
-
-
 def create_max_calls_per_entrypoint_condition(
     db: Session, condition: schemas.CreateMaxCallsPerEntrypointCondition
 ):
-    # If a condition still exists, do not create a new one
+    """
+    Creates a condition in the database that limits the
+    maximum number of calls per entrypoint within a contract.
+    """
+    # First checks if there is an existing condition with the same
+    # entrypoint, contract and vault ID in the database, and if the
+    # maximum number of calls has not been reached.
     existing_condition = (
         db.query(models.Condition)
         .filter(models.Condition.entrypoint_id == condition.entrypoint_id)
@@ -368,20 +356,23 @@ def create_max_calls_per_entrypoint_condition(
         .filter(models.Condition.current < models.Condition.max)
         .one_or_none()
     )
+    # if such a condition exists then raise the exception
     if existing_condition is not None:
         raise ConditionAlreadyExists(
             "A condition with maximum calls per entrypoint already exists and the maximum is not reached. Cannot create a new one."
         )
+    # Creating a new condition
     db_condition = models.Condition(
         **{
             "type": schemas.ConditionType.MAX_CALLS_PER_ENTRYPOINT,
             "contract_id": condition.contract_id,
             "entrypoint_id": condition.entrypoint_id,
             "vault_id": condition.vault_id,
-            "max": condition.max,
-            "current": 0,
+            "max": condition.max,  # maximum allowed number of calls for the entrypoint
+            "current": 0,  # init is 0, representing the current number of calls
         }
     )
+    # the new condition is added to the database session
     db.add(db_condition)
     db.commit()
     db.refresh(db_condition)
@@ -397,11 +388,63 @@ def create_max_calls_per_entrypoint_condition(
     )
 
 
-def check_max_calls_per_sponsee(db: Session, sponsee_address: str, vault_id: UUID4):
+def create_max_calls_per_contract_for_new_users(
+    db: Session, condition: schemas.CreateMaxCallsPerContractForNewUsers
+):
+    """
+    Creates a condition in the database that limits the
+    maximum number of calls per users within a contract.
+    """
+    # First checks if there is an existing condition with the same
+    # user_id, contract and vault ID in the database, and if the
+    # maximum number of calls has not been reached.
+    existing_condition = (
+        db.query(models.Condition)
+        .filter(models.Condition.user_id == condition.user_id)
+        .filter(models.Condition.contract_id == condition.contract_id)
+        .filter(models.Condition.vault_id == condition.vault_id)
+        .filter(models.Condition.current < models.Condition.max)
+        .one_or_none()
+    )
+    # if such a condition exists then raise the exception
+    if existing_condition is not None:
+        raise ConditionAlreadyExists(
+            "A condition with maximum calls per contract for new user already exists and the maximum is not reached. Cannot create a new one."
+        )
+    # Creating a new condition
+    db_condition = models.Condition(
+        **{
+            "type": schemas.ConditionType.MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS,
+            "contract_id": condition.contract_id,
+            "user_id": condition.user_id,  # ID of the user
+            "vault_id": condition.vault_id,  # ID of the credit (vault)
+            "max": condition.max,  # maximum allowed number of calls for the entrypoint
+            "current": 0,  # init is 0, representing the current number of calls
+        }
+    )
+    db.add(db_condition)
+    db.commit()
+    db.refresh(db_condition)
+    return schemas.MaxCallsPerContractForNewUsersCondition(
+        contract_id=db_condition.contract_id,
+        user_id=db_condition.user_id,
+        vault_id=db_condition.vault_id,
+        max=db_condition.max,
+        current=db_condition.current,
+        type=db_condition.type,
+        created_at=db_condition.created_at,
+        id=db_condition.id,
+    )
+
+
+def check_max_calls_per_contract_for_new_users(
+    db: Session, contract_id: UUID4, user_id: UUID4, vault_id: UUID4
+):
     return (
         db.query(models.Condition)
-        .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_SPONSEE)
-        .filter(models.Condition.sponsee_address == sponsee_address)
+        .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS)
+        .filter(models.Condition.contract_id == contract_id)
+        .filter(models.Condition.user_id == user_id)
         .filter(models.Condition.vault_id == vault_id)
         .one_or_none()
     )
@@ -422,20 +465,24 @@ def check_max_calls_per_entrypoint(
 
 def check_conditions(db: Session, datas: schemas.CheckConditions):
     print(datas)
-    sponsee_condition = check_max_calls_per_sponsee(
-        db, datas.sponsee_address, datas.vault_id
+    contract_for_new_users_condition = check_max_calls_per_contract_for_new_users(
+        db, datas.contract_id, datas.user_id, datas.vault_id
     )
     entrypoint_condition = check_max_calls_per_entrypoint(
         db, datas.contract_id, datas.entrypoint_id, datas.vault_id
     )
 
-    # No condition registered
-    if sponsee_condition is None and entrypoint_condition is None:
+    # Checks if both conditions are none, mean that there are no conditions registered,
+    # return true
+    if contract_for_new_users_condition is None and entrypoint_condition is None:
         return True
-    # One of condition is excedeed
+
+    # Check either of the conditions has been exceeded.
+    # If either condition is not none and its current value is >= its max value, it return false.
+    # indicating that the condition has been exceeded.
     if (
-        sponsee_condition is not None
-        and (sponsee_condition.current >= sponsee_condition.max)
+        contract_for_new_users_condition is not None
+        and (contract_for_new_users_condition.current >= contract_for_new_users_condition.max)
     ) or (
         entrypoint_condition is not None
         and (entrypoint_condition.current >= entrypoint_condition.max)
@@ -443,19 +490,18 @@ def check_conditions(db: Session, datas: schemas.CheckConditions):
         return False
 
     # Update conditions
-    # TODO - Rewrite with list
-
-    if sponsee_condition:
-        update_condition(db, sponsee_condition)
-    if entrypoint_condition:
-        update_condition(db, entrypoint_condition)
+    if contract_for_new_users_condition or entrypoint_condition:
+        update_conditions(
+            db, [c for c in [contract_for_new_users_condition, entrypoint_condition] if c])
     return True
 
 
-def update_condition(db: Session, condition: models.Condition):
-    db.query(models.Condition).filter(models.Condition.id == condition.id).update(
-        {"current": condition.current + 1}
-    )
+def update_conditions(db: Session, conditions: List[models.Condition]):
+    for condition in conditions:
+        db.query(models.Condition).filter(models.Condition.id == condition.id).update(
+            {"current": models.Condition.current + 1}
+        )
+        db.commit()
 
 
 def get_conditions_by_vault(db: Session, vault_id: str):

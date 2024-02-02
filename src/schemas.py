@@ -7,7 +7,7 @@ from typing import List, Any, Optional
 # -- UTILITY TYPES --
 class ConditionType(enum.Enum):
     MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
-    MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"
+    MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS = "MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS"
 
 
 # Users
@@ -139,7 +139,7 @@ class UpdateMaxCallsPerMonth(BaseModel):
 
 class CreateCondition(BaseModel):
     type: ConditionType
-    sponsee_address: Optional[str] = None
+    user_id: UUID4
     contract_id: Optional[UUID4] = None
     entrypoint_id: Optional[UUID4] = None
     vault_id: UUID4
@@ -153,14 +153,15 @@ class CreateMaxCallsPerEntrypointCondition(BaseModel):
     max: int
 
 
-class CreateMaxCallsPerSponseeCondition(BaseModel):
-    sponsee_address: str
+class CreateMaxCallsPerContractForNewUsers(BaseModel):
+    contract_id: UUID4
+    user_id: UUID4
     vault_id: UUID4
     max: int
 
 
 class CheckConditions(BaseModel):
-    sponsee_address: str
+    user_id: UUID4
     contract_id: UUID4
     entrypoint_id: UUID4
     vault_id: UUID4
@@ -180,5 +181,6 @@ class MaxCallsPerEntrypointCondition(ConditionBase):
     entrypoint_id: UUID4
 
 
-class MaxCallsPerSponseeCondition(ConditionBase):
-    sponsee_address: str
+class MaxCallsPerContractForNewUsersCondition(ConditionBase):
+    contract_id: UUID4
+    user_id: UUID4

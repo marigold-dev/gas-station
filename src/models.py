@@ -19,6 +19,11 @@ import datetime
 
 # ------- USER ------- #
 class User(Base):
+    """
+    Represents users in the system.
+    Contains information: user ID, name, address, and a counter for withdrawals
+    Relationships: contracts and credits
+    """
     __tablename__ = "users"
 
     def __repr__(self):
@@ -37,6 +42,11 @@ class User(Base):
 
 # ------- CONTRACT ------- #
 class Contract(Base):
+    """
+    Represents contracts within the system.
+    Contains: contract ID, name, address, and maximum number of calls allowed per month.
+    Relationships: users, entrypoints, credits, operations and conditions
+    """
     __tablename__ = "contracts"
 
     def __repr__(self):
@@ -62,6 +72,11 @@ class Contract(Base):
 
 # ------- ENTRYPOINT ------- #
 class Entrypoint(Base):
+    """
+    Represents entrypoints associated with contracts.
+    Defines entrypoints within contracts, whether they are enabled, and their name.
+    Relationships: contracts, operations, and conditions.
+    """
     __tablename__ = "entrypoints"
 
     def __init__(self, name, is_enabled, contract_id):
@@ -74,11 +89,19 @@ class Entrypoint(Base):
             self.contract_id, self.name
         )
 
+    # primary key column representing the ID for each entrypoint instance.
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # column storing the name of the entrypoint.
     name = Column(String)
+
+    # column representing whether the entrypoint is currently enabled or not
     is_enabled = Column(Boolean)
+
+    # foreign key column referencing the ID of the contract to which this entrypoint belongs.
     contract_id = Column(UUID(as_uuid=True), ForeignKey("contracts.id"))
 
+    # Relationship with: contract, operation and condition
     contract = relationship("Contract", back_populates="entrypoints")
     operations = relationship("Operation", back_populates="entrypoint")
     conditions = relationship("Condition", back_populates="entrypoint")
@@ -88,6 +111,11 @@ class Entrypoint(Base):
 
 
 class Credit(Base):
+    """
+    Represents credits associated with users.
+    Contains: credit ID, amount, and the owner's ID.
+    Relationships: users, contracts and conditions.
+    """
     __tablename__ = "credits"
 
     def __repr__(self):
@@ -95,10 +123,16 @@ class Credit(Base):
             self.id, self.amount, self.owner_id
         )
 
+    # Primary key column representing the ID for each credit instance.
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # column storing the amount of credit associated with this instance.
     amount = Column(Integer, default=0)
+
+    # Foreign key column referencing the ID of the owner (user) associated with this credit
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
 
+    # Relationship with: user, contract and condition
     owner = relationship("User", back_populates="credits")
     contracts = relationship("Contract", back_populates="credit")
     conditions = relationship("Condition", back_populates="vault")
@@ -108,6 +142,11 @@ class Credit(Base):
 
 
 class Operation(Base):
+    """
+    Represents operations performed within contracts.
+    Contains: operation ID, cost, user address, and status.
+    Relationships: contracts and operations.
+    """
     __tablename__ = "operations"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -125,31 +164,33 @@ class Operation(Base):
 
 
 # ------- CONDITIONS ------- #
-# Condition class with the requirement to limit the number
-# of calls for new users (sponsees)
 
 class Condition(Base):
+    """
+    Represents conditions associated with contracts or entrypoints
+    Contains: condition type, maximum allowed calls, and current count.
+    Relationships: contracts, entrypoints, users and vault(credits).
+    """
     __tablename__ = "conditions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type = Column(Enum(ConditionType))
-    sponsee_address = Column(
-        String,
-        CheckConstraint(
-            "(type = 'MAX_CALLS_PER_SPONSEE') = (sponsee_address IS NOT NULL)",
-            name="sponsee_address_not_null_constraint",
-        ),
-        nullable=True,
-    )
+
     contract_id = Column(
         UUID(as_uuid=True),
+
         CheckConstraint(
-            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = (contract_id IS NOT NULL)",
+            # Check if the constraint type is either
+            # MAX_CALLS_PER_ENTRYPOINT or MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS
+            "(type IN ('MAX_CALLS_PER_ENTRYPOINT', 'MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS') AND contract_id IS NOT NULL",
             name="contract_id_not_null_constraint",
         ),
         ForeignKey("contracts.id"),
         nullable=True,
     )
+
+    # Foreign key column referencing the ID of the associated entrypoint if the condition
+    # type is MAX_CALLS_PER_ENTRYPOINT.
     entrypoint_id = Column(
         UUID(as_uuid=True),
         CheckConstraint(
@@ -159,14 +200,31 @@ class Condition(Base):
         ForeignKey("entrypoints.id"),
         nullable=True,
     )
+
+    # Foreign key column reference the ID of the associated user if the
+    # condition is MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS
+    user_id = Column(
+        UUID(as_uuid=True),
+        CheckConstraint(
+            "(type = 'MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS') = (user_id IS NOT NULL)",
+            name="user_id_not_null_constraint",
+        ),
+        ForeignKey("users.id"),
+        nullable=True,
+    )
+
+    # Foreign key column referencing the ID of the associated credit (vault)
     vault_id = Column(UUID(as_uuid=True), ForeignKey(
         "credits.id"), nullable=False)
+
     max = Column(Integer, nullable=False)
     current = Column(Integer, nullable=False)
     created_at = Column(
         DateTime(timezone=True), default=datetime.datetime.utcnow(), nullable=False
     )
 
+    # Relationships defining with: contract, entrypoint, user, credit
     contract = relationship("Contract", back_populates="conditions")
     entrypoint = relationship("Entrypoint", back_populates="conditions")
+    user = relationship("User", back_populates="users")
     vault = relationship("Credit", back_populates="conditions")

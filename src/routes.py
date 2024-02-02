@@ -292,6 +292,7 @@ async def post_operation(
                 detail=f"Target {contract_address} is not allowed",
             )
         try:
+            # retrieving contract
             contract = crud.get_contract_by_address(db, contract_address)
         except ContractNotFound:
             logging.warning(f"{contract_address} is not found")
@@ -303,15 +304,25 @@ async def post_operation(
         entrypoint_name = operation["parameters"]["entrypoint"]
 
         try:
+            # retrieving the entrypoint
             entrypoint = crud.get_entrypoint(
                 db, str(contract.address), entrypoint_name)
             if not entrypoint.is_enabled:
                 raise EntrypointDisabled()
 
+            # Retrieving the user_id
+            # Check that if the user_id is among the 4 newest user
+            owner_address = contract.owner.address
+            user = crud.get_user_by_address(db, owner_address)
+            user_id = user.id
+            if not crud.check_user_is_new(db, user_id.id):
+                raise UserNotFound()
+
+            # condition checking
             if not crud.check_conditions(
                 db,
                 schemas.CheckConditions(
-                    sponsee_address=call_data.sender_address,
+                    user_id=user_id.id,
                     contract_id=contract.id,
                     entrypoint_id=entrypoint.id,
                     vault_id=contract.credit_id,
@@ -323,6 +334,12 @@ async def post_operation(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not found",
+            )
+        except UserNotFound:
+            logging.warning(f"User is not found")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User is not found",
             )
         except EntrypointDisabled:
             logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
@@ -452,17 +469,26 @@ async def create_condition(
                 ),
             )
         elif (
-            body.type == ConditionType.MAX_CALLS_PER_SPONSEE
-            and body.sponsee_address is not None
+            body.type == ConditionType.MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS
+            and body.contract_id is not None
         ):
-            return crud.create_max_calls_per_sponsee_condition(
-                db,
-                schemas.CreateMaxCallsPerSponseeCondition(
-                    sponsee_address=body.sponsee_address,
-                    vault_id=body.vault_id,
-                    max=body.max,
-                ),
-            )
+            # determine if the user is among 4 newest users
+            user_is_new = crud.check_user_is_new(db, body.user_id)
+            if user_is_new:
+                return crud.create_max_calls_per_contract_for_new_users(
+                    db,
+                    schemas.CreateMaxCallsPerContractForNewUsers(
+                        contract_id=body.contract_id,
+                        user_id=body.user_id,
+                        vault_id=body.vault_id,
+                        max=body.max,
+                    ),
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User is not eligible for new user condition.",
+                )
         else:
             logging.error("Unknown condition or missing parameters.")
             raise HTTPException(
