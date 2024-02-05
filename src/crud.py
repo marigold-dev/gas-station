@@ -479,19 +479,18 @@ def check_conditions(db: Session, datas: schemas.CheckConditions):
         return False
 
     # Update conditions
-    # TODO - Rewrite with list
-
-    if contract_for_new_users_condition:
-        update_condition(db, contract_for_new_users_condition)
-    if entrypoint_condition:
-        update_condition(db, entrypoint_condition)
+    if contract_for_new_users_condition or entrypoint_condition:
+        update_conditions(
+            db, [c for c in [contract_for_new_users_condition, entrypoint_condition] if c])
     return True
 
 
-def update_condition(db: Session, condition: models.Condition):
-    db.query(models.Condition).filter(models.Condition.id == condition.id).update(
-        {"current": condition.current + 1}
-    )
+def update_conditions(db: Session, conditions: List[models.Condition]):
+    for condition in conditions:
+        db.query(models.Condition).filter(models.Condition.id == condition.id).update(
+            {"current": models.Condition.current + 1}
+        )
+        db.commit()
 
 
 def get_conditions_by_vault(db: Session, vault_id: str):
