@@ -133,23 +133,14 @@ class Condition(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type = Column(Enum(ConditionType))
-    sponsee_address = Column(
-        String,
-        CheckConstraint(
-            "(type = 'MAX_CALLS_PER_SPONSEE') = (sponsee_address IS NOT NULL)",
-            name="sponsee_address_not_null_constraint",
-        ),
-        nullable=True,
-    )
     contract_id = Column(
         UUID(as_uuid=True),
-        CheckConstraint(
-            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = (contract_id IS NOT NULL)",
-            name="contract_id_not_null_constraint",
-        ),
+        # Check if the condition type is either for entrypoint or for new users
+        CheckConstraint("type IN ('MAX_CALLS_PER_ENTRYPOINT', 'MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS') AND contract_id IS NOT NULL"
+                        ),
         ForeignKey("contracts.id"),
-        nullable=True,
-    )
+        nullable=True,)
+
     entrypoint_id = Column(
         UUID(as_uuid=True),
         CheckConstraint(
@@ -159,6 +150,17 @@ class Condition(Base):
         ForeignKey("entrypoints.id"),
         nullable=True,
     )
+
+    # Foreign key column reference the ID of the associated user if the condition is
+    # MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS
+    user_id = Column(
+        UUID(as_uuid=True),
+        CheckConstraint("(type = 'MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS') = (user_id IS NOT NULL)",
+                        name="user_id_not_null_constraint",
+                        ),
+        ForeignKey("users.id"), nullable=True,
+    )
+
     vault_id = Column(UUID(as_uuid=True), ForeignKey(
         "credits.id"), nullable=False)
     max = Column(Integer, nullable=False)
@@ -169,4 +171,5 @@ class Condition(Base):
 
     contract = relationship("Contract", back_populates="conditions")
     entrypoint = relationship("Entrypoint", back_populates="conditions")
+    user = relationship("User", back_populates="users")
     vault = relationship("Credit", back_populates="conditions")
