@@ -308,10 +308,19 @@ async def post_operation(
             if not entrypoint.is_enabled:
                 raise EntrypointDisabled()
 
+            # Retrieving the user_id
+            # Check that if the user_id is among the 4 newest user
+            owner_address = contract.owner.address
+            user = crud.get_user_by_address(db, owner_address)
+            user_id = user.id
+            if not crud.check_user_is_new(db, user_id.id):
+                raise UserNotFound()
+
+            # Condition checking
             if not crud.check_conditions(
                 db,
                 schemas.CheckConditions(
-                    sponsee_address=call_data.sender_address,
+                    user_id=user_id.id,
                     contract_id=contract.id,
                     entrypoint_id=entrypoint.id,
                     vault_id=contract.credit_id,
@@ -323,6 +332,12 @@ async def post_operation(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Entrypoint {entrypoint_name} is not found",
+            )
+        except UserNotFound:
+            logging.warning(f"User is not found")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User is not found",
             )
         except EntrypointDisabled:
             logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
