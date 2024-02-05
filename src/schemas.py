@@ -161,7 +161,7 @@ class CreateMaxCallsPerContractForNewUsersCondition(BaseModel):
 
 
 class CheckConditions(BaseModel):
-    sponsee_address: str
+    user_id: UUID4
     contract_id: UUID4
     entrypoint_id: UUID4
     vault_id: UUID4

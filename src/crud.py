@@ -427,11 +427,12 @@ def create_max_calls_per_entrypoint_condition(
     )
 
 
-def check_max_calls_per_sponsee(db: Session, sponsee_address: str, vault_id: UUID4):
+def check_max_calls_per_contract_for_new_users(db: Session, contract_id: UUID4, user_id: UUID4, vault_id: UUID4):
     return (
         db.query(models.Condition)
-        .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_SPONSEE)
-        .filter(models.Condition.sponsee_address == sponsee_address)
+        .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS)
+        .filter(models.Condition.contract_id == contract_id)
+        .filter(models.Condition.user_id == user_id)
         .filter(models.Condition.vault_id == vault_id)
         .one_or_none()
     )
@@ -452,20 +453,25 @@ def check_max_calls_per_entrypoint(
 
 def check_conditions(db: Session, datas: schemas.CheckConditions):
     print(datas)
-    sponsee_condition = check_max_calls_per_sponsee(
-        db, datas.sponsee_address, datas.vault_id
+    contract_for_new_users_condition = check_max_calls_per_contract_for_new_users(
+        db, datas.contract_id, datas.user_id, datas.vault_id
     )
+
     entrypoint_condition = check_max_calls_per_entrypoint(
         db, datas.contract_id, datas.entrypoint_id, datas.vault_id
     )
 
-    # No condition registered
-    if sponsee_condition is None and entrypoint_condition is None:
+    # Checks if both conditions are none, mean that there are no conditions registered,
+    # return true
+    if contract_for_new_users_condition is None and entrypoint_condition is None:
         return True
-    # One of condition is excedeed
+
+    # Check either of the condition has been excedeed.
+    # If either condition is not None and its current value is >= its max value, it return false,
+    # indicating that the condition has been exceeded.
     if (
-        sponsee_condition is not None
-        and (sponsee_condition.current >= sponsee_condition.max)
+        contract_for_new_users_condition is not None
+        and (contract_for_new_users_condition.current >= contract_for_new_users_condition.max)
     ) or (
         entrypoint_condition is not None
         and (entrypoint_condition.current >= entrypoint_condition.max)
@@ -475,8 +481,8 @@ def check_conditions(db: Session, datas: schemas.CheckConditions):
     # Update conditions
     # TODO - Rewrite with list
 
-    if sponsee_condition:
-        update_condition(db, sponsee_condition)
+    if contract_for_new_users_condition:
+        update_condition(db, contract_for_new_users_condition)
     if entrypoint_condition:
         update_condition(db, entrypoint_condition)
     return True
