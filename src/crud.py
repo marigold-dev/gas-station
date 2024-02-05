@@ -44,6 +44,26 @@ def create_user(db: Session, user: schemas.UserCreation):
     return db_user
 
 
+def check_user_is_new(db: Session, user_id: UUID4) -> bool:
+    """
+    Function to determine if a user is one of the last 4
+    new users registered in the database.
+    """
+    try:
+        # Get the last 4 users ordered by their registration data
+        recent_users: List[models.User] = (
+            db.query(models.User)
+            .order_by(models.User.created_at.desc())
+            .limit(4)
+            .all()
+        )
+        # Check if the given user_id is among the last 4 users
+        return any(user.id == user_id for user in recent_users)
+    except UserNotFound:
+        # If the user is not found, they are not among the newest users
+        return False
+
+
 def get_contracts_by_user(db: Session, user_address: str):
     """
     Return a list of models.Contracts or raise UserNotFound exception
@@ -318,35 +338,45 @@ def check_calls_per_month(db, contract_id):
     return max_calls >= len(nb_operations_already_made)
 
 
-def create_max_calls_per_sponsee_condition(
-    db: Session, condition: schemas.CreateMaxCallsPerSponseeCondition
+def create_max_calls_per_contract_for_new_users_condition(
+    db: Session, condition: schemas.CreateMaxCallsPerContractForNewUsersCondition
 ):
-    # If a condition still exists, do not create a new one
+    """
+    Creates a condition in the database that limits the
+    maximum number of calls per users within a contract
+    """
+    # First checks if there is an existing condition with the same
+    # user_id, contract and vault ID in the database, if the
+    # maximum number of calls has not been reached.
     existing_condition = (
         db.query(models.Condition)
-        .filter(models.Condition.sponsee_address == condition.sponsee_address)
+        .filter(models.Condition.user_id == condition.user_id)
+        .filter(models.Condition.contract_id == condition.contract_id)
         .filter(models.Condition.vault_id == condition.vault_id)
         .filter(models.Condition.current < models.Condition.max)
         .one_or_none()
     )
     if existing_condition is not None:
         raise ConditionAlreadyExists(
-            "A condition with maximum calls per sponsee already exists and the maximum is not reached. Cannot create a new one."
+            "A condition with maximum calls per contract for new users already exists and the maximum is not reached. Cannot create a new one."
         )
+    # Creating a new condition
     db_condition = models.Condition(
         **{
-            "type": schemas.ConditionType.MAX_CALLS_PER_SPONSEE,
-            "sponsee_address": condition.sponsee_address,
+            "type": schemas.ConditionType.MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS,
+            "contract_id": condition.contract_id,
+            "user_id": condition.user_id,  # ID of the user
             "vault_id": condition.vault_id,
-            "max": condition.max,
-            "current": 0,
+            "max": condition.max,  # maximum allowed number of calls for the user
+            "current": 0,  # representing the current number of calls
         }
     )
     db.add(db_condition)
     db.commit()
     db.refresh(db_condition)
-    return schemas.MaxCallsPerSponseeCondition(
-        sponsee_address=db_condition.sponsee_address,
+    return schemas.MaxCallsPerContractForNewUsersCondition(
+        contract_id=db_condition.contract_id,
+        user_id=db_condition.user_id,
         vault_id=db_condition.vault_id,
         max=db_condition.max,
         current=db_condition.current,

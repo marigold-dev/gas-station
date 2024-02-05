@@ -139,7 +139,7 @@ class UpdateMaxCallsPerMonth(BaseModel):
 
 class CreateCondition(BaseModel):
     type: ConditionType
-    sponsee_address: Optional[str] = None
+    user_id: UUID4
     contract_id: Optional[UUID4] = None
     entrypoint_id: Optional[UUID4] = None
     vault_id: UUID4
@@ -153,8 +153,9 @@ class CreateMaxCallsPerEntrypointCondition(BaseModel):
     max: int
 
 
-class CreateMaxCallsPerSponseeCondition(BaseModel):
-    sponsee_address: str
+class CreateMaxCallsPerContractForNewUsersCondition(BaseModel):
+    contract_id: UUID4
+    user_id: UUID4
     vault_id: UUID4
     max: int
 
@@ -180,5 +181,6 @@ class MaxCallsPerEntrypointCondition(ConditionBase):
     entrypoint_id: UUID4
 
 
-class MaxCallsPerSponseeCondition(ConditionBase):
-    sponsee_address: str
+class MaxCallsPerContractForNewUsersCondition(ConditionBase):
+    contract_id: UUID4
+    user_id: UUID4

@@ -452,17 +452,26 @@ async def create_condition(
                 ),
             )
         elif (
-            body.type == ConditionType.MAX_CALLS_PER_SPONSEE
-            and body.sponsee_address is not None
+            body.type == ConditionType.MAX_CALLS_PER_CONTRACT_FOR_NEW_USERS
+            and body.contract_id is not None
         ):
-            return crud.create_max_calls_per_sponsee_condition(
-                db,
-                schemas.CreateMaxCallsPerSponseeCondition(
-                    sponsee_address=body.sponsee_address,
-                    vault_id=body.vault_id,
-                    max=body.max,
-                ),
-            )
+            # Determine if the user is among 4 newest users
+            user_is_new = crud.check_user_is_new(db, body.user_id)
+            if user_is_new:
+                return crud.create_max_calls_per_contract_for_new_users_condition(
+                    db,
+                    schemas.CreateMaxCallsPerContractForNewUsersCondition(
+                        contract_id=body.contract_id,
+                        user_id=body.user_id,
+                        vault_id=body.vault_id,
+                        max=body.max,
+                    ),
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User is not eligible for new user condition.",
+                )
         else:
             logging.error("Unknown condition or missing parameters.")
             raise HTTPException(
