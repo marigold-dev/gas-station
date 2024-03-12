@@ -82,15 +82,20 @@ def check_credits(db, estimated_fees):
 
 async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     receiver = ptz.key.public_key_hash()
-    op_result = await find_transaction(tx_hash)
-    return any(
-        op
-        for op in op_result["contents"]
-        if op["kind"] == "transaction"
-        and op["source"] == payer
-        and op["destination"] == receiver
-        and int(op["amount"]) == int(amount)
-    )
+    block_time = int(constants["minimal_block_delay"])
+    try:
+        async with asyncio.timeout(2*block_time):
+            op_result = await find_transaction(tx_hash)
+            return any(
+                op
+                for op in op_result["contents"]
+                if op["kind"] == "transaction"
+                and op["source"] == payer
+                and op["destination"] == receiver
+                and int(op["amount"]) == int(amount)
+            )
+    except TimeoutError:
+        return False
 
 
 async def confirm_withdraw(tx_hash, db, user_id, withdraw):
