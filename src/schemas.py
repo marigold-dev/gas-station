@@ -6,7 +6,9 @@ from typing import List, Any, Optional
 
 # -- UTILITY TYPES --
 class ConditionType(enum.Enum):
+    # Max number of calls to a given entrypoint, for all sponsee
     MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
+    # Max number of calls per sponsee per contract
     MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"
 
 
@@ -125,7 +127,7 @@ class SignedCall(BaseModel):
 
 
 class CreateOperation(BaseModel):
-    user_address: str
+    sender_address: str
     contract_id: str
     entrypoint_id: str
     hash: str
@@ -139,7 +141,6 @@ class UpdateMaxCallsPerMonth(BaseModel):
 
 class CreateCondition(BaseModel):
     type: ConditionType
-    sponsee_address: Optional[str] = None
     contract_id: Optional[UUID4] = None
     entrypoint_id: Optional[UUID4] = None
     vault_id: UUID4
@@ -154,7 +155,7 @@ class CreateMaxCallsPerEntrypointCondition(BaseModel):
 
 
 class CreateMaxCallsPerSponseeCondition(BaseModel):
-    sponsee_address: str
+    contract_id: UUID4
     vault_id: UUID4
     max: int
 
@@ -168,6 +169,7 @@ class CheckConditions(BaseModel):
 
 class ConditionBase(BaseModel):
     vault_id: UUID4
+    contract_id: UUID4
     max: int
     current: int
     type: ConditionType
@@ -176,9 +178,4 @@ class ConditionBase(BaseModel):
 
 
 class MaxCallsPerEntrypointCondition(ConditionBase):
-    contract_id: UUID4
     entrypoint_id: UUID4
-
-
-class MaxCallsPerSponseeCondition(ConditionBase):
-    sponsee_address: str

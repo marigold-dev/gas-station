@@ -254,7 +254,7 @@ def get_credits_from_contract_address(db: Session, contract_address: str):
 def create_operation(db: Session, operation: schemas.CreateOperation):
     db_operation = models.Operation(
         **{
-            "user_address": operation.user_address,
+            "sender_address": operation.sender_address,
             "contract_id": operation.contract_id,
             "entrypoint_id": operation.entrypoint_id,
             "hash": operation.hash,
@@ -317,7 +317,7 @@ def create_max_calls_per_sponsee_condition(
     # If a condition still exists, do not create a new one
     existing_condition = (
         db.query(models.Condition)
-        .filter(models.Condition.sponsee_address == condition.sponsee_address)
+        .filter(models.Condition.contract_id == condition.contract_id)
         .filter(models.Condition.vault_id == condition.vault_id)
         .filter(models.Condition.current < models.Condition.max)
         .one_or_none()
@@ -329,17 +329,18 @@ def create_max_calls_per_sponsee_condition(
     db_condition = models.Condition(
         **{
             "type": schemas.ConditionType.MAX_CALLS_PER_SPONSEE,
-            "sponsee_address": condition.sponsee_address,
+            "contract_id": condition.contract_id,
             "vault_id": condition.vault_id,
             "max": condition.max,
+            "is_active": True,
             "current": 0,
         }
     )
     db.add(db_condition)
     db.commit()
     db.refresh(db_condition)
-    return schemas.MaxCallsPerSponseeCondition(
-        sponsee_address=db_condition.sponsee_address,
+    return schemas.ConditionBase(
+        contract_id=db_condition.contract_id,
         vault_id=db_condition.vault_id,
         max=db_condition.max,
         current=db_condition.current,
@@ -390,12 +391,16 @@ def create_max_calls_per_entrypoint_condition(
     )
 
 
-def check_max_calls_per_sponsee(db: Session, sponsee_address: str, vault_id: UUID4):
+def check_max_calls_per_sponsee(
+    db: Session, contract_id: UUID4, vault_id: UUID4
+):
     return (
         db.query(models.Condition)
         .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_SPONSEE)
-        .filter(models.Condition.sponsee_address == sponsee_address)
+        .filter(models.Condition.contract_id == contract_id)
         .filter(models.Condition.vault_id == vault_id)
+        .filter(models.Condition.is_active == True)
+        .order_by(models.Condition.created_at.asc())
         .one_or_none()
     )
 
@@ -409,46 +414,63 @@ def check_max_calls_per_entrypoint(
         .filter(models.Condition.contract_id == contract_id)
         .filter(models.Condition.entrypoint_id == entrypoint_id)
         .filter(models.Condition.vault_id == vault_id)
+        .filter(models.Condition.is_active == True)
         .one_or_none()
     )
-
-
-def check_conditions(db: Session, datas: schemas.CheckConditions):
-    print(datas)
-    sponsee_condition = check_max_calls_per_sponsee(
-        db, datas.sponsee_address, datas.vault_id
-    )
-    entrypoint_condition = check_max_calls_per_entrypoint(
-        db, datas.contract_id, datas.entrypoint_id, datas.vault_id
-    )
-
-    # No condition registered
-    if sponsee_condition is None and entrypoint_condition is None:
-        return True
-    # One of condition is excedeed
-    if (
-        sponsee_condition is not None
-        and (sponsee_condition.current >= sponsee_condition.max)
-    ) or (
-        entrypoint_condition is not None
-        and (entrypoint_condition.current >= entrypoint_condition.max)
-    ):
-        return False
-
-    # Update conditions
-    # TODO - Rewrite with list
-
-    if sponsee_condition:
-        update_condition(db, sponsee_condition)
-    if entrypoint_condition:
-        update_condition(db, entrypoint_condition)
-    return True
 
 
 def update_condition(db: Session, condition: models.Condition):
     db.query(models.Condition).filter(models.Condition.id == condition.id).update(
         {"current": condition.current + 1}
     )
+
+
+def check_max_sponsee_condition(
+    db: Session, data: schemas.CheckConditions, sponsee_condition: models.Condition
+):
+    nb_operations = (
+        db.query(models.Operation)
+        .filter(models.Operation.sender_address == data.sponsee_address)
+        .filter(models.Operation.contract_id == data.contract_id)
+        .filter(models.Operation.created_at >= sponsee_condition.created_at)
+        .count()
+    )
+    print(nb_operations)
+    return nb_operations >= sponsee_condition.max
+
+
+def check_conditions(db: Session, data: schemas.CheckConditions):
+    print(data)
+    sponsee_condition = check_max_calls_per_sponsee(
+        db, data.contract_id, data.vault_id
+    )
+    entrypoint_condition = check_max_calls_per_entrypoint(
+        db, data.contract_id, data.entrypoint_id, data.vault_id
+    )
+
+    # No condition registered
+    if sponsee_condition is None and entrypoint_condition is None:
+        return True
+    # Check max_entrypoint condition
+    if (
+        entrypoint_condition is not None and
+        (entrypoint_condition.current >= entrypoint_condition.max)
+    ):
+        return False
+
+    # Check max_sponsee condition
+    if (
+        sponsee_condition is not None and
+        check_max_sponsee_condition(db, data, sponsee_condition)
+    ):
+        return False
+
+    # Update conditions
+    if entrypoint_condition is not None:
+        update_condition(db, entrypoint_condition)
+    if sponsee_condition is not None:
+        update_condition(db, sponsee_condition)
+    return True
 
 
 def get_conditions_by_vault(db: Session, vault_id: str):
