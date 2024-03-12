@@ -30,7 +30,10 @@ router = APIRouter()
 # Healthcheck
 @router.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {
+        "status": "healthy",
+        "tezos_address": tezos.public_address
+    }
 
 
 # POST endpoints

@@ -17,6 +17,7 @@ assert (
 ), "Could not read secret key"
 
 admin_key = pytezos.pytezos.key.from_encoded_key(config.SECRET_KEY)
+public_address = admin_key.public_key_hash()
 ptz = pytezos.pytezos.using(config.TEZOS_RPC, admin_key)
 log.info(f"API address is {ptz.key.public_key_hash()}")
 constants = ptz.shell.block.context.constants()
