@@ -361,7 +361,11 @@ async def post_operation(
         crud.create_operation(
             db,
             schemas.CreateOperation(
-                user_address=call_data.sender_address, contract_id=str(contract.id), entrypoint_id=str(entrypoint.id), hash=result["transaction_hash"], status=result["result"]  # type: ignore
+                sender_address=call_data.sender_address,
+                contract_id=str(contract.id),
+                entrypoint_id=str(entrypoint.id),
+                hash=result["transaction_hash"],
+                status=result["result"]  # type: ignore
             ),
         )
     except MichelsonError as e:
@@ -448,12 +452,12 @@ async def create_condition(
             )
         elif (
             body.type == ConditionType.MAX_CALLS_PER_SPONSEE
-            and body.sponsee_address is not None
+            and body.contract_id is not None
         ):
             return crud.create_max_calls_per_sponsee_condition(
                 db,
                 schemas.CreateMaxCallsPerSponseeCondition(
-                    sponsee_address=body.sponsee_address,
+                    contract_id=body.contract_id,
                     vault_id=body.vault_id,
                     max=body.max,
                 ),

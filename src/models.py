@@ -112,7 +112,7 @@ class Operation(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     cost = Column(Integer)
-    user_address = Column(String)
+    sender_address = Column(String)
     contract_id = Column(UUID(as_uuid=True), ForeignKey("contracts.id"))
     entrypoint_id = Column(UUID(as_uuid=True), ForeignKey("entrypoints.id"))
     hash = Column(String)
@@ -131,18 +131,11 @@ class Condition(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     type = Column(Enum(ConditionType))
-    sponsee_address = Column(
-        String,
-        CheckConstraint(
-            "(type = 'MAX_CALLS_PER_SPONSEE') = (sponsee_address IS NOT NULL)",
-            name="sponsee_address_not_null_constraint",
-        ),
-        nullable=True,
-    )
     contract_id = Column(
         UUID(as_uuid=True),
         CheckConstraint(
-            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = (contract_id IS NOT NULL)",
+            "(type = 'MAX_CALLS_PER_ENTRYPOINT' or type = \
+            'MAX_CALLS_PER_SPONSEE') = (contract_id IS NOT NULL)",
             name="contract_id_not_null_constraint",
         ),
         ForeignKey("contracts.id"),
@@ -151,7 +144,8 @@ class Condition(Base):
     entrypoint_id = Column(
         UUID(as_uuid=True),
         CheckConstraint(
-            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = (entrypoint_id IS NOT NULL)",
+            "(type = 'MAX_CALLS_PER_ENTRYPOINT') = \
+            (entrypoint_id IS NOT NULL)",
             name="entrypoint_id_not_null_constraint",
         ),
         ForeignKey("entrypoints.id"),
@@ -163,7 +157,7 @@ class Condition(Base):
     created_at = Column(
         DateTime(timezone=True), default=datetime.datetime.utcnow(), nullable=False
     )
-
+    is_active = Column(Boolean, nullable=False)
     contract = relationship("Contract", back_populates="conditions")
     entrypoint = relationship("Entrypoint", back_populates="conditions")
     vault = relationship("Credit", back_populates="conditions")
