@@ -85,7 +85,7 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
     receiver = ptz.key.public_key_hash()
     block_time = int(constants["minimal_block_delay"])
     try:
-        async with asyncio.timeout(2*block_time):
+        async with asyncio.timeout(2 * block_time):
             op_result = await find_transaction(tx_hash)
             return any(
                 op
