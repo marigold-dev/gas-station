@@ -391,9 +391,7 @@ def create_max_calls_per_entrypoint_condition(
     )
 
 
-def check_max_calls_per_sponsee(
-    db: Session, contract_id: UUID4, vault_id: UUID4
-):
+def check_max_calls_per_sponsee(db: Session, contract_id: UUID4, vault_id: UUID4):
     return (
         db.query(models.Condition)
         .filter(models.Condition.type == schemas.ConditionType.MAX_CALLS_PER_SPONSEE)
@@ -435,15 +433,11 @@ def check_max_sponsee_condition(
         .filter(models.Operation.created_at >= sponsee_condition.created_at)
         .count()
     )
-    print(nb_operations)
     return nb_operations >= sponsee_condition.max
 
 
 def check_conditions(db: Session, data: schemas.CheckConditions):
-    print(data)
-    sponsee_condition = check_max_calls_per_sponsee(
-        db, data.contract_id, data.vault_id
-    )
+    sponsee_condition = check_max_calls_per_sponsee(db, data.contract_id, data.vault_id)
     entrypoint_condition = check_max_calls_per_entrypoint(
         db, data.contract_id, data.entrypoint_id, data.vault_id
     )
@@ -452,16 +446,14 @@ def check_conditions(db: Session, data: schemas.CheckConditions):
     if sponsee_condition is None and entrypoint_condition is None:
         return True
     # Check max_entrypoint condition
-    if (
-        entrypoint_condition is not None and
-        (entrypoint_condition.current >= entrypoint_condition.max)
+    if entrypoint_condition is not None and (
+        entrypoint_condition.current >= entrypoint_condition.max
     ):
         return False
 
     # Check max_sponsee condition
-    if (
-        sponsee_condition is not None and
-        check_max_sponsee_condition(db, data, sponsee_condition)
+    if sponsee_condition is not None and check_max_sponsee_condition(
+        db, data, sponsee_condition
     ):
         return False
 

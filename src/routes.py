@@ -30,10 +30,7 @@ router = APIRouter()
 # Healthcheck
 @router.get("/")
 async def root():
-    return {
-        "status": "healthy",
-        "tezos_address": tezos.public_address
-    }
+    return {"status": "healthy", "tezos_address": tezos.public_address}
 
 
 # POST endpoints
@@ -365,7 +362,7 @@ async def post_operation(
                 contract_id=str(contract.id),
                 entrypoint_id=str(entrypoint.id),
                 hash=result["transaction_hash"],
-                status=result["result"]  # type: ignore
+                status=result["result"],  # type: ignore
             ),
         )
     except MichelsonError as e:
