@@ -17,25 +17,52 @@ from .database import Base
 import datetime
 
 
-# ------- USER ------- #
-class User(Base):
-    __tablename__ = "users"
+# ------- SPONSOR CLASSES ------- #
+# Sponsors
+# - must have a tezos address, which they may use to provide credits
+# - may have an API, to which user operations are transmitted, and
+#   which may post these operations themselves, or just return a signed
+#   receipt to the gas station (which then posts the operations itself)
+# If the sponsor API returns the operation to the GS, then the sponsor must
+# have deposited credits.
+class Sponsor(Base):
+    __tablename__ = "sponsors"
 
     def __repr__(self):
-        return "User(id='{}', name='{}', address='{}', counter='{}')".format(
-            self.id, self.name, self.address, self.withdraw_counter
+        return "Sponsor(id='{}', name='{}', address='{}', counter='{}')".format(
+            self.id, self.name, self.tezos_address, self.withdraw_counter
         )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
-    address = Column(String, unique=True)
+    tezos_address = Column(String, unique=True)
+    sponsor_api_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sponsor_apis.id"),
+        nullable=True
+    )
     withdraw_counter = Column(Integer, default=0)
 
     contracts = relationship("Contract", back_populates="owner")
     credits = relationship("Credit", back_populates="owner")
 
 
+class SponsorAPI(Base):
+    __tablename__ = "sponsor_apis"
+
+    def __repr__(self):
+        return "API(id='{}', name='{}', url='{}')".format(
+            self.id, self.name, self.url
+        )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    url = Column(String, unique=True)
+    public_key = Column(String, nullable=False)
+
+
 # ------- CONTRACT ------- #
+# TODO: contract sponsored by several owners
+# Do not require contracts to be tied to a specific credit
 class Contract(Base):
     __tablename__ = "contracts"
 
@@ -47,13 +74,13 @@ class Contract(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
     address = Column(String, unique=True)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("sponsors.id"))
     credit_id = Column(UUID(as_uuid=True), ForeignKey("credits.id"))
     max_calls_per_month = Column(
         Integer, default=-1
     )  # TODO must be > 0 ; -1 means disabled
 
-    owner = relationship("User", back_populates="contracts")
+    owner = relationship("Sponsor", back_populates="contracts")
     entrypoints = relationship("Entrypoint", back_populates="contract")
     credit = relationship("Credit", back_populates="contracts")
     operations = relationship("Operation", back_populates="contract")
@@ -97,9 +124,9 @@ class Credit(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     amount = Column(Integer, default=0)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("sponsors.id"))
 
-    owner = relationship("User", back_populates="credits")
+    owner = relationship("Sponsor", back_populates="credits")
     contracts = relationship("Contract", back_populates="credit")
     conditions = relationship("Condition", back_populates="vault")
 

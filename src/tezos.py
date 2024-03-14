@@ -99,13 +99,14 @@ async def confirm_deposit(tx_hash, payer, amount: Union[int, str]):
         return False
 
 
-async def confirm_withdraw(tx_hash, db, user_id, withdraw):
-    """Ensure withdraw transaction is successful to update credits user. \n
-    Can raise an OperationNotFound exception if transaction is not found.
+async def confirm_withdraw(tx_hash, db, sponsor_id, withdraw):
+    """Ensures the withdraw transaction is successful and updates the sponsor's
+    credit. Raises an OperationNotFound exception if transaction is not found.
     """
     await find_transaction(tx_hash)
     credit_update = schemas.CreditUpdate(
-        id=withdraw.id, amount=-withdraw.amount, owner_id=user_id, operation_hash=""
+        id=withdraw.id, amount=-withdraw.amount, owner_id=sponsor_id,
+        operation_hash=""
     )
     crud.update_credits(db, credit_update)
 

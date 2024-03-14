@@ -12,19 +12,26 @@ class ConditionType(enum.Enum):
     MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"
 
 
-# Users
-class UserBase(BaseModel):
-    address: str
+# Sponsors
+class SponsorBase(BaseModel):
+    tezos_address: str
 
 
-class User(UserBase):
+class Sponsor(SponsorBase):
     id: UUID4
     name: str
     withdraw_counter: int
 
 
-class UserCreation(UserBase):
+class SponsorCreation(SponsorBase):
     name: str
+
+
+# Sonsor APIs
+class SponsorAPICreation(BaseModel):
+    sponsor_id: UUID4
+    api_url: str
+    public_key: str
 
 
 # Entrypoints

@@ -15,7 +15,7 @@ from .utils import (
     EntrypointNotFound,
     TooManyCallsForThisMonth,
     NotEnoughFunds,
-    UserNotFound,
+    SponsorNotFound,
     OperationNotFound,
 )
 from .config import logging
@@ -34,13 +34,13 @@ async def root():
 
 
 # POST endpoints
-@router.post("/users", response_model=schemas.User)
-async def create_user(
-    user: schemas.UserCreation, db: Session = Depends(database.get_db)
+@router.post("/sponsors", response_model=schemas.Sponsor)
+async def create_sponsor(
+    sponsor: schemas.SponsorCreation, db: Session = Depends(database.get_db)
 ):
-    user = crud.create_user(db, user)
-    crud.create_credits(db, schemas.CreditCreation(owner_id=user.id))
-    return user
+    sponsor = crud.create_sponsor(db, sponsor)
+    crud.create_credits(db, schemas.CreditCreation(owner_id=sponsor.id))
+    return sponsor
 
 
 @router.post("/contracts", response_model=schemas.Contract)
@@ -70,7 +70,7 @@ async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
     try:
-        payer_address = crud.get_credits(db, credits.id).owner.address
+        payer_address = crud.get_credits(db, credits.id).owner.tezos_address
         op_hash = credits.operation_hash
         amount = credits.amount
         is_confirmed = await tezos.confirm_deposit(op_hash, payer_address, amount)
@@ -127,8 +127,8 @@ async def withdraw_credits(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Bad withdraw counter."
         )
 
-    owner_address = credits.owner.address
-    user = crud.get_user_by_address(db, owner_address)
+    owner_address = credits.owner.tezos_address
+    sponsor = crud.get_sponsor_by_address(db, owner_address)
     public_key = tezos.get_public_key(owner_address)
     is_valid = tezos.check_signature(
         withdraw.to_micheline_pair(), withdraw.micheline_signature, public_key
@@ -140,8 +140,8 @@ async def withdraw_credits(
         )
     # We increment the counter even if the withdraw fails to prevent
     # the counter from being used again immediately.
-    counter = crud.update_user_withdraw_counter(
-        db, str(user.id), withdraw.withdraw_counter + 1
+    counter = crud.update_sponsor_withdraw_counter(
+        db, str(sponsor.id), withdraw.withdraw_counter + 1
     )
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
@@ -150,55 +150,55 @@ async def withdraw_credits(
         # has been confirmed
         asyncio.create_task(
             tezos.confirm_withdraw(
-                result["transaction_hash"], db, str(user.id), withdraw
+                result["transaction_hash"], db, str(sponsor.id), withdraw
             )
         )
 
     return {**result, "counter": counter}
 
 
-# Users and credits getters
-@router.get("/users/{address_or_id}", response_model=schemas.User)
-async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
+# Sponsors and credits getters
+@router.get("/sponsors/{address_or_id}", response_model=schemas.Sponsor)
+async def get_sponsor(address_or_id: str, db: Session = Depends(database.get_db)):
     try:
         if is_address(address_or_id) and address_or_id.startswith("tz"):
-            return crud.get_user_by_address(db, address_or_id)
+            return crud.get_sponsor_by_address(db, address_or_id)
         else:
-            return crud.get_user(db, address_or_id)
-    except UserNotFound:
-        logging.warning(f"User {address_or_id} not found")
+            return crud.get_sponsor(db, address_or_id)
+    except SponsorNotFound:
+        logging.warning(f"Sponsor {address_or_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
+            detail=f"Sponsor not found.",
         )
 
 
-@router.get("/credits/{user_address_or_id}", response_model=list[schemas.Credit])
-async def credits_for_user(
-    user_address_or_id: str, db: Session = Depends(database.get_db)
+@router.get("/credits/{sponsor_address_or_id}", response_model=list[schemas.Credit])
+async def credits_for_sponsor(
+    sponsor_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        if is_address(user_address_or_id) and user_address_or_id.startswith("tz"):
-            return crud.get_user_by_address(db, user_address_or_id).credits
+        if is_address(sponsor_address_or_id) and sponsor_address_or_id.startswith("tz"):
+            return crud.get_sponsor_by_address(db, sponsor_address_or_id).credits
         else:
-            return crud.get_user(db, user_address_or_id).credits
-    except UserNotFound:
-        logging.warning(f"User {user_address_or_id} not found")
+            return crud.get_sponsor(db, sponsor_address_or_id).credits
+    except SponsorNotFound:
+        logging.warning(f"Sponsor {sponsor_address_or_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
+            detail=f"Sponsor not found.",
         )
 
 
 # Contracts
-@router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
-async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
+@router.get("/contracts/sponsor/{sponsor_address}", response_model=list[schemas.Contract])
+async def get_sponsor_contracts(sponsor_address: str, db: Session = Depends(database.get_db)):
     try:
-        return crud.get_contracts_by_user(db, user_address)
-    except UserNotFound:
-        logging.warning(f"User {user_address} not found.")
+        return crud.get_contracts_by_sponsor(db, sponsor_address)
+    except SponsorNotFound:
+        logging.warning(f"Sponsor {sponsor_address} not found.")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Sponsor not found."
         )
 
 
@@ -396,7 +396,7 @@ async def post_operation(
 async def signed_operation(
     call_data: schemas.SignedCall, db: Session = Depends(database.get_db)
 ):
-    # In order for the user to sign Micheline, we need to
+    # In order to check the signed Micheline
     # FIXME: this is a serious issue, we should sign the contract address too.
     signed_data = [x["parameters"]["value"] for x in call_data.operations]
     if not tezos.check_signature(
