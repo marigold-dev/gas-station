@@ -2,7 +2,7 @@ pytezos
 python-multipart
 uvicorn[standard]
 fastapi
-python-jose[cryptography]
+pyjwt[cryptography]
 python-dotenv
 pydantic
 sqlalchemy
