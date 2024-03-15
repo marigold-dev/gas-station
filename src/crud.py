@@ -31,7 +31,12 @@ def get_sponsor_by_address(db: Session, tezos_address: str):
     Return a models.Sponsor or raise SponsorNotFound exception
     """
     try:
-        return db.query(models.Sponsor).filter(models.Sponsor.tezos_address == tezos_address).one()
+        db_sponsor = (
+            db.query(models.Sponsor)
+            .filter(models.Sponsor.tezos_address == tezos_address)
+            .one()
+        )
+        return db_sponsor
     except NoResultFound as e:
         raise SponsorNotFound() from e
 
@@ -125,6 +130,25 @@ def create_contract(db: Session, contract: schemas.ContractCreation):
         db.add_all(db_entrypoints)
         db.commit()
         return db_contract
+
+
+def update_sponsor_api(db: Session, api_update: schemas.SponsorAPIUpdate):
+    db_sponsor_api = models.SponsorAPI(**{
+        "url": api_update.api_url,
+        "public_key": api_update.public_key
+    })
+    db.add(db_sponsor_api)
+    db.commit()
+    sponsor = (
+        db
+        .query(models.Sponsor)
+        .filter(models.Sponsor.id == api_update.sponsor_id)
+        .update({
+            "api_id": db_sponsor_api.id
+        })
+    )
+    db.commit()
+    return sponsor
 
 
 def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate]):

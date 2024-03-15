@@ -58,9 +58,20 @@ async def create_contract(
 
 
 # PUT endpoints
+# FIXME: we obviously need to protect this in some way, but we'll rework
+# security in a later upgrade
+@router.put("/sponsor_api", response_model=bool)
+async def update_sponsor_api(
+    api_update: schemas.SponsorAPIUpdate,
+    db: Session = Depends(database.get_db)
+):
+    return crud.update_sponsor_api(db, api_update)
+
+
 @router.put("/entrypoints", response_model=list[schemas.Entrypoint])
 async def update_entrypoints(
-    entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)
+    entrypoints: list[schemas.EntrypointUpdate],
+    db: Session = Depends(database.get_db)
 ):
     return crud.update_entrypoints(db, entrypoints)
 

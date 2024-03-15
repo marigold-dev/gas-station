@@ -26,6 +26,19 @@ import datetime
 #   receipt to the gas station (which then posts the operations itself)
 # If the sponsor API returns the operation to the GS, then the sponsor must
 # have deposited credits.
+class SponsorAPI(Base):
+    __tablename__ = "sponsor_apis"
+
+    def __repr__(self):
+        return "API(id='{}', url='{}')".format(
+            self.id, self.url
+        )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    url = Column(String, unique=True)
+    public_key = Column(String, nullable=False)
+
+
 class Sponsor(Base):
     __tablename__ = "sponsors"
 
@@ -37,28 +50,11 @@ class Sponsor(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
     tezos_address = Column(String, unique=True)
-    sponsor_api_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey("sponsor_apis.id"),
-        nullable=True
-    )
     withdraw_counter = Column(Integer, default=0)
-
+    api_id = Column(UUID(as_uuid=True), ForeignKey("sponsor_apis.id"))
     contracts = relationship("Contract", back_populates="owner")
     credits = relationship("Credit", back_populates="owner")
-
-
-class SponsorAPI(Base):
-    __tablename__ = "sponsor_apis"
-
-    def __repr__(self):
-        return "API(id='{}', name='{}', url='{}')".format(
-            self.id, self.name, self.url
-        )
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    url = Column(String, unique=True)
-    public_key = Column(String, nullable=False)
+    sponsor_api = relationship("SponsorAPI")
 
 
 # ------- CONTRACT ------- #

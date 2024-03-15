@@ -4,12 +4,19 @@ from pydantic import BaseModel, UUID4
 from typing import List, Any, Optional
 
 
-# -- UTILITY TYPES --
+# Utility types
 class ConditionType(enum.Enum):
     # Max number of calls to a given entrypoint, for all sponsee
     MAX_CALLS_PER_ENTRYPOINT = "MAX_CALLS_PER_ENTRYPOINT"
     # Max number of calls per sponsee per contract
     MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"
+
+
+# Sonsor APIs
+class SponsorAPIUpdate(BaseModel):
+    sponsor_id: UUID4
+    api_url: str
+    public_key: str
 
 
 # Sponsors
@@ -21,17 +28,11 @@ class Sponsor(SponsorBase):
     id: UUID4
     name: str
     withdraw_counter: int
+    api_id: UUID4 | None = None
 
 
 class SponsorCreation(SponsorBase):
     name: str
-
-
-# Sonsor APIs
-class SponsorAPICreation(BaseModel):
-    sponsor_id: UUID4
-    api_url: str
-    public_key: str
 
 
 # Entrypoints
