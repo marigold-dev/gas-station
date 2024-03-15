@@ -8,3 +8,4 @@ pydantic
 sqlalchemy
 psycopg2
 alembic
+aiohttp

@@ -1,9 +1,3 @@
-# -- EXCEPTIONS --
-
-
-import enum
-
-
 class SponsorNotFound(Exception):
     pass
 

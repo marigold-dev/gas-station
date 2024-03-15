@@ -12,6 +12,12 @@ class ConditionType(enum.Enum):
     MAX_CALLS_PER_SPONSEE = "MAX_CALLS_PER_SPONSEE"
 
 
+class Receipt(BaseModel):
+    """Receipts returned by the sponsor APIs"""
+    gas_station_action: str
+    signature: str
+
+
 # Sonsor APIs
 class SponsorAPIUpdate(BaseModel):
     sponsor_id: UUID4

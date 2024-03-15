@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 import asyncio
+import aiohttp
+import jwt
 
 from sqlalchemy.orm import Session
 from . import tezos, crud, schemas, database
@@ -276,6 +278,78 @@ async def get_entrypoint(
         )
 
 
+def _check_contract(operation, db):
+    """Checks that a contract used in the operation is registered and active
+    in the database. Returns the contract object."""
+    contract_address = str(operation["destination"])
+
+    # Transfers to implicit accounts are always refused
+    if not contract_address.startswith("KT"):
+        logging.warning(f"Target {contract_address} is not allowed")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Target {contract_address} is not allowed",
+        )
+    try:
+        contract = crud.get_contract_by_address(db, contract_address)
+    except ContractNotFound:
+        logging.warning(f"{contract_address} is not found")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{contract_address} is not found",
+        )
+
+    return contract
+
+
+def _check_conditions(sender, contract_id, entrypoint_id, credit_id, db):
+    if not crud.check_conditions(
+        db,
+        schemas.CheckConditions(
+            sponsee_address=sender,
+            contract_id=contract_id,
+            entrypoint_id=entrypoint_id,
+            vault_id=credit_id,
+        ),
+    ):
+        logging.warning(f"A condition exceed the maximum defined.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A condition exceed the maximum defined.",
+        )
+
+
+def _check_entrypoint(operation, contract, db):
+    """Checks that the target entrypoint is registered and active."""
+    entrypoint_name = operation["parameters"]["entrypoint"]
+    try:
+        entrypoint = crud.get_entrypoint(
+            db,
+            str(contract.address),
+            entrypoint_name
+        )
+        if not entrypoint.is_enabled:
+            logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Entrypoint {entrypoint_name} is disabled.",
+            )
+        return entrypoint
+    except EntrypointNotFound:
+        logging.warning(f"Entrypoint {entrypoint_name} is not found")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Entrypoint {entrypoint_name} is not found",
+        )
+
+
+def _check_receipt(pkey, receipt, json_data):
+    decoded = jwt.decode(
+        receipt["signature"], key=pkey, algorithms=["RS256"]
+    )
+    return True
+
+
 # Operations
 @router.post("/operation")
 async def post_operation(
@@ -287,67 +361,48 @@ async def post_operation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Empty operations list",
         )
-    # TODO: check that amount=0?
+    # Build a set of all the sponsors who have an API that we should query
+    # and make checks on the contracts, entrypoints
+    sponsors_apis = dict()
     for operation in call_data.operations:
-        contract_address = str(operation["destination"])
+        contract = _check_contract(operation, db)
+        entrypoint = _check_entrypoint(operation, contract, db)
+        _check_conditions(
+            call_data.sender_address,
+            contract.id,
+            entrypoint.id,
+            contract.credit_id,
+            db
+        )
+        sponsor_api = contract.owner.sponsor_api
+        if sponsor_api is not None:
+            sponsors_apis[sponsor_api.url] = sponsor_api.public_key
 
-        # Transfers to implicit accounts are always refused
-        if not contract_address.startswith("KT"):
-            logging.warning(f"Target {contract_address} is not allowed")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Target {contract_address} is not allowed",
-            )
+    for sponsor_url in sponsors_apis:
+        # FIXME concurrent requests
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                sponsor_url + "/operation",
+                json = call_data.model_dump()
+            ) as response:
+                receipt = await response.json()
+        pkey = sponsors_apis[sponsor_url]
         try:
-            contract = crud.get_contract_by_address(db, contract_address)
-        except ContractNotFound:
-            logging.warning(f"{contract_address} is not found")
+            parsed_receipt = schemas.Receipt(**receipt)
+            _check_receipt(pkey, receipt, call_data.model_dump())
+            if parsed_receipt.gas_station_action.lower() == "refuse":
+                raise ValueError()
+            elif parsed_receipt.gas_station_action.lower() == "accepted":
+                return receipt
+        except ValueError as e:
+            print(e)
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"{contract_address} is not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="A sponsor refused the operation"
             )
-
-        entrypoint_name = operation["parameters"]["entrypoint"]
-
-        try:
-            entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
-            if not entrypoint.is_enabled:
-                raise EntrypointDisabled()
-
-            if not crud.check_conditions(
-                db,
-                schemas.CheckConditions(
-                    sponsee_address=call_data.sender_address,
-                    contract_id=contract.id,
-                    entrypoint_id=entrypoint.id,
-                    vault_id=contract.credit_id,
-                ),
-            ):
-                raise ConditionExceed()
-        except EntrypointNotFound:
-            logging.warning(f"Entrypoint {entrypoint_name} is not found")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Entrypoint {entrypoint_name} is not found",
-            )
-        except EntrypointDisabled:
-            logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Entrypoint {entrypoint_name} is disabled.",
-            )
-        except ConditionExceed:
-            logging.warning(f"A condition exceed the maximum defined.")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A condition exceed the maximum defined.",
-            )
-
     try:
         # Simulate the operation alone without sending it
-        # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
-
         logging.debug(f"Result of operation simulation : {op}")
 
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
@@ -358,12 +413,14 @@ async def post_operation(
         if not tezos.check_credits(db, estimated_fees):
             logging.warning(f"Not enough funds to pay estimated fees.")
             raise NotEnoughFunds(
-                f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
+                f"Estimated fees: {estimated_fees[str(contract.address)]} mutez"
             )
         if not crud.check_calls_per_month(db, contract.id):  # type: ignore
             logging.warning(f"Too many calls made for this contract this month.")
             raise TooManyCallsForThisMonth()
 
+        # Adds the operation to a queue and updates the credits in the
+        # database.
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
 
         crud.create_operation(

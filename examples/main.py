@@ -1,6 +1,7 @@
 import asyncio
-from typing import Any, Optional
+from typing import Any
 import os
+import requests
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, status
 from fastapi.responses import JSONResponse
@@ -11,6 +12,7 @@ from Crypto.PublicKey import RSA
 import jwt
 
 api_url = os.getenv("GAS_STATION_URL")
+gs_user_address = "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb"
 router = APIRouter()
 
 
@@ -21,9 +23,10 @@ class Operation(BaseModel):
     operations: list[dict[str, Any]]
 
 
+# TODO: the signature should include the action decided by the sponsor API
 class Receipt(BaseModel):
     """Signature of an operation to be posted on-chain."""
-    gas_station_action: Optional[str]
+    gas_station_action: str
     signature: str
 
 
@@ -50,6 +53,7 @@ seen_senders = dict()
 
 def validate(sender):
     seen = seen_senders.get(sender, 0)
+    print("SEEN", seen, "TIMES")
     if seen > 1:
         return False
     else:
@@ -77,17 +81,31 @@ async def sign_operation(request: Request):
             signature=signature
         )
     else:
-        raise JSONResponse(
+        return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content=jsonable_encoder(
                 {
                     "detail": "Invalid call",
-                    "body": "User has already used its quota",
-                    "custom msg": {"Your error message"}
+                    "body": "FIXME",
+                    "custom msg": ""
                 }
             )
         )
 
+# TODO
+# - implement "operation_posted"
+
+# Register to the API
+r = requests.get(f"{api_url}/sponsors/{gs_user_address}")
+gs_user = r.json()
+requests.put(
+    f"{api_url}/sponsor_api",
+    json = {
+        "sponsor_id": gs_user["id"],
+        "api_url": "http://localhost:8005",  # This API
+        "public_key": pkey
+    }
+)
 
 app = FastAPI()
 app.include_router(router)
