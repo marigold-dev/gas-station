@@ -10,51 +10,56 @@ from .utils import (
     ContractNotFound,
     CreditNotFound,
     EntrypointNotFound,
-    UserNotFound,
+    SponsorNotFound,
 )
 from . import models, schemas
 from sqlalchemy.exc import NoResultFound
 
 
-def get_user(db: Session, uuid: UUID4):
+def get_sponsor(db: Session, uuid: UUID4):
     """
-    Return a models.User or raise UserNotFound exception
+    Return a models.Sponsor or raise SponsorNotFound exception
     """
-    db_user: Optional[models.User] = db.query(models.User).get(uuid)
-    if db_user is None:
-        raise UserNotFound()
-    return db_user
+    db_sponsor: Optional[models.Sponsor] = db.query(models.Sponsor).get(uuid)
+    if db_sponsor is None:
+        raise SponsorNotFound()
+    return db_sponsor
 
 
-def get_user_by_address(db: Session, address: str):
+def get_sponsor_by_address(db: Session, tezos_address: str):
     """
-    Return a models.User or raise UserNotFound exception
+    Return a models.Sponsor or raise SponsorNotFound exception
     """
     try:
-        return db.query(models.User).filter(models.User.address == address).one()
+        db_sponsor = (
+            db.query(models.Sponsor)
+            .filter(models.Sponsor.tezos_address == tezos_address)
+            .one()
+        )
+        return db_sponsor
     except NoResultFound as e:
-        raise UserNotFound() from e
+        raise SponsorNotFound() from e
 
 
-def create_user(db: Session, user: schemas.UserCreation):
-    db_user = models.User(**user.model_dump())
-    db.add(db_user)
+def create_sponsor(db: Session, sponsor: schemas.SponsorCreation):
+    db_sponsor = models.Sponsor(**sponsor.model_dump())
+    db.add(db_sponsor)
     db.commit()
-    db.refresh(db_user)
-    return db_user
+    db.refresh(db_sponsor)
+    return db_sponsor
 
 
-def get_contracts_by_user(db: Session, user_address: str):
+def get_contracts_by_sponsor(db: Session, sponsor_address: str):
     """
-    Return a list of models.Contracts or raise UserNotFound exception
+    Return a list of models.Contracts or raise SponsorNotFound exception
     """
-    user = get_user_by_address(db, user_address)
-    return user.contracts
+    sponsor = get_sponsor_by_address(db, sponsor_address)
+    return sponsor.contracts
 
 
 def get_contracts_by_credit(db: Session, credit_id: str):
     """
-    Return a list of models.Contracts or raise UserNotFound exception
+    Return a list of models.Contracts or raise SponsorNotFound exception
     """
     return (
         db.query(models.Contract).filter(models.Contract.credit_id == credit_id).all()
@@ -127,6 +132,25 @@ def create_contract(db: Session, contract: schemas.ContractCreation):
         return db_contract
 
 
+def update_sponsor_api(db: Session, api_update: schemas.SponsorAPIUpdate):
+    db_sponsor_api = models.SponsorAPI(**{
+        "url": api_update.api_url,
+        "public_key": api_update.public_key
+    })
+    db.add(db_sponsor_api)
+    db.commit()
+    sponsor = (
+        db
+        .query(models.Sponsor)
+        .filter(models.Sponsor.id == api_update.sponsor_id)
+        .update({
+            "api_id": db_sponsor_api.id
+        })
+    )
+    db.commit()
+    return sponsor
+
+
 def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate]):
     for e in entrypoints:
         db.query(models.Entrypoint).filter(models.Entrypoint.id == e.id).update(
@@ -141,28 +165,28 @@ def update_entrypoints(db: Session, entrypoints: list[schemas.EntrypointUpdate])
     )
 
 
-def get_user_credits(db: Session, user_id: str):
+def get_sponsor_credits(db: Session, sponsor_id: str):
     """
-    Get credits from a user.
+    Get credits from a sponsor.
     """
-    db_credits = db.query(models.Credit).filter(models.Credit.owner_id == user_id).all()
+    db_credits = db.query(models.Credit).filter(models.Credit.owner_id == sponsor_id).all()
     return db_credits
 
 
-def update_user_withdraw_counter(db: Session, user_id: str, withdraw_counter: int):
+def update_sponsor_withdraw_counter(db: Session, sponsor_id: str, withdraw_counter: int):
     try:
-        db_user: Optional[models.User] = db.query(models.User).get(user_id)
-        if db_user is None:
-            raise UserNotFound()
+        db_sponsor: Optional[models.Sponsor] = db.query(models.Sponsor).get(sponsor_id)
+        if db_sponsor is None:
+            raise SponsorNotFound()
 
-        db.query(models.User).filter(models.User.id == user_id).update(
+        db.query(models.Sponsor).filter(models.Sponsor.id == sponsor_id).update(
             {"withdraw_counter": withdraw_counter}
         )
 
         db.commit()
-        return db_user.withdraw_counter
+        return db_sponsor.withdraw_counter
     except NoResultFound as e:
-        raise UserNotFound from e
+        raise SponsorNotFound from e
 
 
 def create_credits(db: Session, credit: schemas.CreditCreation):
@@ -170,15 +194,15 @@ def create_credits(db: Session, credit: schemas.CreditCreation):
     Creates credits for a given owner and returns a models.Credit.
     """
     try:
-        # Check if the user exists
-        _ = db.query(models.User).get(credit.owner_id)
+        # Check if the sponsor exists
+        _ = db.query(models.Sponsor).get(credit.owner_id)
         credit = models.Credit(**credit.model_dump())
         db.add(credit)
         db.commit()
         # db.refresh(credit)
         return credit
     except NoResultFound as e:
-        raise UserNotFound() from e
+        raise SponsorNotFound() from e
 
 
 def update_credits(db: Session, credit_update: schemas.CreditUpdate):
@@ -222,7 +246,7 @@ def update_credits_from_contract_address(db: Session, amount: int, address: str)
 
 def get_credits(db: Session, uuid: UUID4):
     """
-    Return a models.Credit or raise UserNotFound exception
+    Return a models.Credit or raise SponsorNotFound exception
     """
     db_credit = db.query(models.Credit).get(uuid)
     if db_credit is None:

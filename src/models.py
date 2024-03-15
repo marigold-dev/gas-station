@@ -9,6 +9,7 @@ from sqlalchemy import (
     String,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
@@ -17,25 +18,48 @@ from .database import Base
 import datetime
 
 
-# ------- USER ------- #
-class User(Base):
-    __tablename__ = "users"
+# ------- SPONSOR CLASSES ------- #
+# Sponsors
+# - must have a tezos address, which they may use to provide credits
+# - may have an API, to which user operations are transmitted, and
+#   which may post these operations themselves, or just return a signed
+#   receipt to the gas station (which then posts the operations itself)
+# If the sponsor API returns the operation to the GS, then the sponsor must
+# have deposited credits.
+class SponsorAPI(Base):
+    __tablename__ = "sponsor_apis"
 
     def __repr__(self):
-        return "User(id='{}', name='{}', address='{}', counter='{}')".format(
-            self.id, self.name, self.address, self.withdraw_counter
+        return "API(id='{}', url='{}')".format(
+            self.id, self.url
+        )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    url = Column(String, unique=True)
+    public_key = Column(String, nullable=False)
+
+
+class Sponsor(Base):
+    __tablename__ = "sponsors"
+
+    def __repr__(self):
+        return "Sponsor(id='{}', name='{}', address='{}', counter='{}')".format(
+            self.id, self.name, self.tezos_address, self.withdraw_counter
         )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
-    address = Column(String, unique=True)
+    tezos_address = Column(String, unique=True)
     withdraw_counter = Column(Integer, default=0)
-
+    api_id = Column(UUID(as_uuid=True), ForeignKey("sponsor_apis.id"))
     contracts = relationship("Contract", back_populates="owner")
     credits = relationship("Credit", back_populates="owner")
+    sponsor_api = relationship("SponsorAPI")
 
 
 # ------- CONTRACT ------- #
+# TODO: contract sponsored by several owners
+# Do not require contracts to be tied to a specific credit
 class Contract(Base):
     __tablename__ = "contracts"
 
@@ -47,13 +71,13 @@ class Contract(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String)
     address = Column(String, unique=True)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("sponsors.id"))
     credit_id = Column(UUID(as_uuid=True), ForeignKey("credits.id"))
     max_calls_per_month = Column(
         Integer, default=-1
     )  # TODO must be > 0 ; -1 means disabled
 
-    owner = relationship("User", back_populates="contracts")
+    owner = relationship("Sponsor", back_populates="contracts")
     entrypoints = relationship("Entrypoint", back_populates="contract")
     credit = relationship("Credit", back_populates="contracts")
     operations = relationship("Operation", back_populates="contract")
@@ -97,9 +121,9 @@ class Credit(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     amount = Column(Integer, default=0)
-    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("sponsors.id"))
 
-    owner = relationship("User", back_populates="credits")
+    owner = relationship("Sponsor", back_populates="credits")
     contracts = relationship("Contract", back_populates="credit")
     conditions = relationship("Condition", back_populates="vault")
 
@@ -117,7 +141,7 @@ class Operation(Base):
     entrypoint_id = Column(UUID(as_uuid=True), ForeignKey("entrypoints.id"))
     hash = Column(String)
     status = Column(String)  # TODO Enum
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     contract = relationship("Contract", back_populates="operations")
     entrypoint = relationship("Entrypoint", back_populates="operations")
@@ -155,7 +179,7 @@ class Condition(Base):
     max = Column(Integer, nullable=False)
     current = Column(Integer, nullable=False)
     created_at = Column(
-        DateTime(timezone=True), default=datetime.datetime.utcnow(), nullable=False
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     is_active = Column(Boolean, nullable=False)
     contract = relationship("Contract", back_populates="conditions")

@@ -1,10 +1,4 @@
-# -- EXCEPTIONS --
-
-
-import enum
-
-
-class UserNotFound(Exception):
+class SponsorNotFound(Exception):
     pass
 
 

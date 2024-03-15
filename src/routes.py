@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 import asyncio
+import aiohttp
+import jwt
 
 from sqlalchemy.orm import Session
 from . import tezos, crud, schemas, database
@@ -15,7 +17,7 @@ from .utils import (
     EntrypointNotFound,
     TooManyCallsForThisMonth,
     NotEnoughFunds,
-    UserNotFound,
+    SponsorNotFound,
     OperationNotFound,
 )
 from .config import logging
@@ -34,13 +36,13 @@ async def root():
 
 
 # POST endpoints
-@router.post("/users", response_model=schemas.User)
-async def create_user(
-    user: schemas.UserCreation, db: Session = Depends(database.get_db)
+@router.post("/sponsors", response_model=schemas.Sponsor)
+async def create_sponsor(
+    sponsor: schemas.SponsorCreation, db: Session = Depends(database.get_db)
 ):
-    user = crud.create_user(db, user)
-    crud.create_credits(db, schemas.CreditCreation(owner_id=user.id))
-    return user
+    sponsor = crud.create_sponsor(db, sponsor)
+    crud.create_credits(db, schemas.CreditCreation(owner_id=sponsor.id))
+    return sponsor
 
 
 @router.post("/contracts", response_model=schemas.Contract)
@@ -58,9 +60,20 @@ async def create_contract(
 
 
 # PUT endpoints
+# FIXME: we obviously need to protect this in some way, but we'll rework
+# security in a later upgrade
+@router.put("/sponsor_api", response_model=bool)
+async def update_sponsor_api(
+    api_update: schemas.SponsorAPIUpdate,
+    db: Session = Depends(database.get_db)
+):
+    return crud.update_sponsor_api(db, api_update)
+
+
 @router.put("/entrypoints", response_model=list[schemas.Entrypoint])
 async def update_entrypoints(
-    entrypoints: list[schemas.EntrypointUpdate], db: Session = Depends(database.get_db)
+    entrypoints: list[schemas.EntrypointUpdate],
+    db: Session = Depends(database.get_db)
 ):
     return crud.update_entrypoints(db, entrypoints)
 
@@ -70,7 +83,7 @@ async def update_credits(
     credits: schemas.CreditUpdate, db: Session = Depends(database.get_db)
 ):
     try:
-        payer_address = crud.get_credits(db, credits.id).owner.address
+        payer_address = crud.get_credits(db, credits.id).owner.tezos_address
         op_hash = credits.operation_hash
         amount = credits.amount
         is_confirmed = await tezos.confirm_deposit(op_hash, payer_address, amount)
@@ -127,8 +140,8 @@ async def withdraw_credits(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Bad withdraw counter."
         )
 
-    owner_address = credits.owner.address
-    user = crud.get_user_by_address(db, owner_address)
+    owner_address = credits.owner.tezos_address
+    sponsor = crud.get_sponsor_by_address(db, owner_address)
     public_key = tezos.get_public_key(owner_address)
     is_valid = tezos.check_signature(
         withdraw.to_micheline_pair(), withdraw.micheline_signature, public_key
@@ -140,8 +153,8 @@ async def withdraw_credits(
         )
     # We increment the counter even if the withdraw fails to prevent
     # the counter from being used again immediately.
-    counter = crud.update_user_withdraw_counter(
-        db, str(user.id), withdraw.withdraw_counter + 1
+    counter = crud.update_sponsor_withdraw_counter(
+        db, str(sponsor.id), withdraw.withdraw_counter + 1
     )
     result = await tezos.withdraw(tezos.tezos_manager, owner_address, withdraw.amount)
     if result["result"] == "ok":
@@ -150,55 +163,55 @@ async def withdraw_credits(
         # has been confirmed
         asyncio.create_task(
             tezos.confirm_withdraw(
-                result["transaction_hash"], db, str(user.id), withdraw
+                result["transaction_hash"], db, str(sponsor.id), withdraw
             )
         )
 
     return {**result, "counter": counter}
 
 
-# Users and credits getters
-@router.get("/users/{address_or_id}", response_model=schemas.User)
-async def get_user(address_or_id: str, db: Session = Depends(database.get_db)):
+# Sponsors and credits getters
+@router.get("/sponsors/{address_or_id}", response_model=schemas.Sponsor)
+async def get_sponsor(address_or_id: str, db: Session = Depends(database.get_db)):
     try:
         if is_address(address_or_id) and address_or_id.startswith("tz"):
-            return crud.get_user_by_address(db, address_or_id)
+            return crud.get_sponsor_by_address(db, address_or_id)
         else:
-            return crud.get_user(db, address_or_id)
-    except UserNotFound:
-        logging.warning(f"User {address_or_id} not found")
+            return crud.get_sponsor(db, address_or_id)
+    except SponsorNotFound:
+        logging.warning(f"Sponsor {address_or_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
+            detail=f"Sponsor not found.",
         )
 
 
-@router.get("/credits/{user_address_or_id}", response_model=list[schemas.Credit])
-async def credits_for_user(
-    user_address_or_id: str, db: Session = Depends(database.get_db)
+@router.get("/credits/{sponsor_address_or_id}", response_model=list[schemas.Credit])
+async def credits_for_sponsor(
+    sponsor_address_or_id: str, db: Session = Depends(database.get_db)
 ):
     try:
-        if is_address(user_address_or_id) and user_address_or_id.startswith("tz"):
-            return crud.get_user_by_address(db, user_address_or_id).credits
+        if is_address(sponsor_address_or_id) and sponsor_address_or_id.startswith("tz"):
+            return crud.get_sponsor_by_address(db, sponsor_address_or_id).credits
         else:
-            return crud.get_user(db, user_address_or_id).credits
-    except UserNotFound:
-        logging.warning(f"User {user_address_or_id} not found")
+            return crud.get_sponsor(db, sponsor_address_or_id).credits
+    except SponsorNotFound:
+        logging.warning(f"Sponsor {sponsor_address_or_id} not found")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User not found.",
+            detail=f"Sponsor not found.",
         )
 
 
 # Contracts
-@router.get("/contracts/user/{user_address}", response_model=list[schemas.Contract])
-async def get_user_contracts(user_address: str, db: Session = Depends(database.get_db)):
+@router.get("/contracts/sponsor/{sponsor_address}", response_model=list[schemas.Contract])
+async def get_sponsor_contracts(sponsor_address: str, db: Session = Depends(database.get_db)):
     try:
-        return crud.get_contracts_by_user(db, user_address)
-    except UserNotFound:
-        logging.warning(f"User {user_address} not found.")
+        return crud.get_contracts_by_sponsor(db, sponsor_address)
+    except SponsorNotFound:
+        logging.warning(f"Sponsor {sponsor_address} not found.")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"User not found."
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Sponsor not found."
         )
 
 
@@ -265,6 +278,78 @@ async def get_entrypoint(
         )
 
 
+def _check_contract(operation, db):
+    """Checks that a contract used in the operation is registered and active
+    in the database. Returns the contract object."""
+    contract_address = str(operation["destination"])
+
+    # Transfers to implicit accounts are always refused
+    if not contract_address.startswith("KT"):
+        logging.warning(f"Target {contract_address} is not allowed")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Target {contract_address} is not allowed",
+        )
+    try:
+        contract = crud.get_contract_by_address(db, contract_address)
+    except ContractNotFound:
+        logging.warning(f"{contract_address} is not found")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{contract_address} is not found",
+        )
+
+    return contract
+
+
+def _check_conditions(sender, contract_id, entrypoint_id, credit_id, db):
+    if not crud.check_conditions(
+        db,
+        schemas.CheckConditions(
+            sponsee_address=sender,
+            contract_id=contract_id,
+            entrypoint_id=entrypoint_id,
+            vault_id=credit_id,
+        ),
+    ):
+        logging.warning(f"A condition exceed the maximum defined.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"A condition exceed the maximum defined.",
+        )
+
+
+def _check_entrypoint(operation, contract, db):
+    """Checks that the target entrypoint is registered and active."""
+    entrypoint_name = operation["parameters"]["entrypoint"]
+    try:
+        entrypoint = crud.get_entrypoint(
+            db,
+            str(contract.address),
+            entrypoint_name
+        )
+        if not entrypoint.is_enabled:
+            logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Entrypoint {entrypoint_name} is disabled.",
+            )
+        return entrypoint
+    except EntrypointNotFound:
+        logging.warning(f"Entrypoint {entrypoint_name} is not found")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Entrypoint {entrypoint_name} is not found",
+        )
+
+
+def _check_receipt(pkey, receipt, json_data):
+    decoded = jwt.decode(
+        receipt["signature"], key=pkey, algorithms=["RS256"]
+    )
+    return True
+
+
 # Operations
 @router.post("/operation")
 async def post_operation(
@@ -276,67 +361,48 @@ async def post_operation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Empty operations list",
         )
-    # TODO: check that amount=0?
+    # Build a set of all the sponsors who have an API that we should query
+    # and make checks on the contracts, entrypoints
+    sponsors_apis = dict()
     for operation in call_data.operations:
-        contract_address = str(operation["destination"])
+        contract = _check_contract(operation, db)
+        entrypoint = _check_entrypoint(operation, contract, db)
+        _check_conditions(
+            call_data.sender_address,
+            contract.id,
+            entrypoint.id,
+            contract.credit_id,
+            db
+        )
+        sponsor_api = contract.owner.sponsor_api
+        if sponsor_api is not None:
+            sponsors_apis[sponsor_api.url] = sponsor_api.public_key
 
-        # Transfers to implicit accounts are always refused
-        if not contract_address.startswith("KT"):
-            logging.warning(f"Target {contract_address} is not allowed")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Target {contract_address} is not allowed",
-            )
+    for sponsor_url in sponsors_apis:
+        # FIXME concurrent requests
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                sponsor_url + "/operation",
+                json = call_data.model_dump()
+            ) as response:
+                receipt = await response.json()
+        pkey = sponsors_apis[sponsor_url]
         try:
-            contract = crud.get_contract_by_address(db, contract_address)
-        except ContractNotFound:
-            logging.warning(f"{contract_address} is not found")
+            parsed_receipt = schemas.Receipt(**receipt)
+            _check_receipt(pkey, receipt, call_data.model_dump())
+            if parsed_receipt.gas_station_action.lower() == "refuse":
+                raise ValueError()
+            elif parsed_receipt.gas_station_action.lower() == "accepted":
+                return receipt
+        except ValueError as e:
+            print(e)
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"{contract_address} is not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="A sponsor refused the operation"
             )
-
-        entrypoint_name = operation["parameters"]["entrypoint"]
-
-        try:
-            entrypoint = crud.get_entrypoint(db, str(contract.address), entrypoint_name)
-            if not entrypoint.is_enabled:
-                raise EntrypointDisabled()
-
-            if not crud.check_conditions(
-                db,
-                schemas.CheckConditions(
-                    sponsee_address=call_data.sender_address,
-                    contract_id=contract.id,
-                    entrypoint_id=entrypoint.id,
-                    vault_id=contract.credit_id,
-                ),
-            ):
-                raise ConditionExceed()
-        except EntrypointNotFound:
-            logging.warning(f"Entrypoint {entrypoint_name} is not found")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Entrypoint {entrypoint_name} is not found",
-            )
-        except EntrypointDisabled:
-            logging.warning(f"Entrypoint {entrypoint_name} is disabled.")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Entrypoint {entrypoint_name} is disabled.",
-            )
-        except ConditionExceed:
-            logging.warning(f"A condition exceed the maximum defined.")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A condition exceed the maximum defined.",
-            )
-
     try:
         # Simulate the operation alone without sending it
-        # TODO: log the result
         op = tezos.simulate_transaction(call_data.operations)
-
         logging.debug(f"Result of operation simulation : {op}")
 
         op_estimated_fees = [(int(x["fee"]), x["destination"]) for x in op.contents]
@@ -347,12 +413,14 @@ async def post_operation(
         if not tezos.check_credits(db, estimated_fees):
             logging.warning(f"Not enough funds to pay estimated fees.")
             raise NotEnoughFunds(
-                f"Estimated fees : {estimated_fees[str(contract.address)]} mutez"
+                f"Estimated fees: {estimated_fees[str(contract.address)]} mutez"
             )
         if not crud.check_calls_per_month(db, contract.id):  # type: ignore
             logging.warning(f"Too many calls made for this contract this month.")
             raise TooManyCallsForThisMonth()
 
+        # Adds the operation to a queue and updates the credits in the
+        # database.
         result = await tezos.tezos_manager.queue_operation(call_data.sender_address, op)
 
         crud.create_operation(
@@ -396,7 +464,7 @@ async def post_operation(
 async def signed_operation(
     call_data: schemas.SignedCall, db: Session = Depends(database.get_db)
 ):
-    # In order for the user to sign Micheline, we need to
+    # In order to check the signed Micheline
     # FIXME: this is a serious issue, we should sign the contract address too.
     signed_data = [x["parameters"]["value"] for x in call_data.operations]
     if not tezos.check_signature(
